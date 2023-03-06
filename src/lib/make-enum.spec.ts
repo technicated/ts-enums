@@ -156,7 +156,7 @@ test('enum with proto and type', (t) => {
   t.is(c.getNumber(), 1764)
 
   const make_a = MyEnum.make() as MyEnum & Record<0 | 1 | 'value', unknown>
-  t.false(Object.getOwnPropertyDescriptor(a, 'case')?.writable)
+  t.false(Object.getOwnPropertyDescriptor(make_a, 'case')?.writable)
   t.is(make_a.case, 'a')
   t.is(make_a.value, undefined)
   t.is(make_a[0], undefined)
@@ -165,7 +165,7 @@ test('enum with proto and type', (t) => {
   t.is(make_a.getNumber(), -1)
 
   const make_b = MyEnum.make(42) as MyEnum & Record<0 | 1 | 'value', unknown>
-  t.false(Object.getOwnPropertyDescriptor(b, 'case')?.writable)
+  t.false(Object.getOwnPropertyDescriptor(make_b, 'case')?.writable)
   t.is(make_b.case, 'b')
   t.is(make_b.value, 42)
   t.is(make_b[0], undefined)
@@ -175,7 +175,7 @@ test('enum with proto and type', (t) => {
 
   const make_c = MyEnum.make(42, 'hello') as MyEnum &
     Record<0 | 1 | 'value', unknown>
-  t.false(Object.getOwnPropertyDescriptor(c, 'case')?.writable)
+  t.false(Object.getOwnPropertyDescriptor(make_c, 'case')?.writable)
   t.is(make_c.case, 'c')
   t.is(make_c.value, undefined)
   t.is(make_c[0], 'hello')
@@ -229,14 +229,14 @@ test('enum with type', (t) => {
   t.is(c[1], 42)
 
   const make_a = MyEnum.make() as MyEnum & Record<0 | 1 | 'value', unknown>
-  t.false(Object.getOwnPropertyDescriptor(a, 'case')?.writable)
+  t.false(Object.getOwnPropertyDescriptor(make_a, 'case')?.writable)
   t.is(make_a.case, 'a')
   t.is(make_a.value, undefined)
   t.is(make_a[0], undefined)
   t.is(make_a[1], undefined)
 
   const make_b = MyEnum.make(42) as MyEnum & Record<0 | 1 | 'value', unknown>
-  t.false(Object.getOwnPropertyDescriptor(b, 'case')?.writable)
+  t.false(Object.getOwnPropertyDescriptor(make_b, 'case')?.writable)
   t.is(make_b.case, 'b')
   t.is(make_b.value, 42)
   t.is(make_b[0], undefined)
@@ -244,7 +244,7 @@ test('enum with type', (t) => {
 
   const make_c = MyEnum.make(42, 'hello') as MyEnum &
     Record<0 | 1 | 'value', unknown>
-  t.false(Object.getOwnPropertyDescriptor(c, 'case')?.writable)
+  t.false(Object.getOwnPropertyDescriptor(make_c, 'case')?.writable)
   t.is(make_c.case, 'c')
   t.is(make_c.value, undefined)
   t.is(make_c[0], 'hello')
