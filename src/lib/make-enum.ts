@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/ban-types */
+
 import { Incr } from './type-arithmetic'
 import { EnumShape } from './types'
 
@@ -12,7 +14,10 @@ type EnumCtorArgs<
   Enum extends EnumShape,
   Case extends Enum['case'],
   Proto extends object
-> = Enum & { _: unknown; case: Case } extends infer _T
+> = Enum & {
+  _: unknown
+  case: Case
+} extends infer _T
   ? { _: unknown } extends Omit<_T, 'case' | keyof Proto>
     ? []
     : 0 extends keyof Omit<_T, 'case' | '_' | keyof Proto>
@@ -24,15 +29,42 @@ type EnumCtors<Enum extends EnumShape, Proto extends object> = {
   [Case in Enum['case']]: (...args: EnumCtorArgs<Enum, Case, Proto>) => Enum
 }
 
-export function makeEnum<Enum extends EnumShape, Proto extends object = never>(
-  makeProto: (e: EnumCtors<Enum, Proto>) => Proto & ThisType<Enum>
-): EnumCtors<Enum, Proto> {
-  const protoWrapper: { proto?: Proto } = {}
+type MakeProtoFn<Enum extends EnumShape, Proto extends object> = (
+  e: EnumCtors<Enum, Proto>
+) => Proto & ThisType<Enum>
 
-  const proxy = new Proxy(protoWrapper, {
-    get({ proto }: { proto: never }, prop) {
-      if (prop in proto) {
-        return proto[prop]
+export function makeEnum<Enum extends EnumShape>(): EnumCtors<Enum, {}>
+export function makeEnum<Enum extends EnumShape, Proto extends object>(
+  makeProto: MakeProtoFn<Enum, Proto>
+): EnumCtors<Enum, Proto>
+export function makeEnum<
+  Enum extends EnumShape,
+  Proto extends object,
+  Type extends object
+>(
+  makeProto: MakeProtoFn<Enum, Proto>,
+  type: Type
+): Type & EnumCtors<Enum, Proto>
+export function makeEnum<Enum extends EnumShape, Type extends object>(
+  type: Type
+): Type & EnumCtors<Enum, {}>
+export function makeEnum<
+  Enum extends EnumShape,
+  Proto extends object,
+  Type extends object
+>(
+  makeProto?: MakeProtoFn<Enum, Proto> | Type,
+  type?: Type
+): Type & EnumCtors<Enum, Proto> {
+  const protoWrapper: { proto: object } = { proto: {} }
+
+  const actualMakeProto = typeof makeProto === 'object' ? undefined : makeProto
+  const actualType = typeof makeProto === 'object' ? makeProto : type
+
+  const proxy = new Proxy(actualType || {}, {
+    get(type: Record<string | symbol, unknown>, prop) {
+      if (prop in type) {
+        return type[prop]
       }
 
       return (payload: object) =>
@@ -43,11 +75,11 @@ export function makeEnum<Enum extends EnumShape, Proto extends object = never>(
             value: prop,
             writable: false,
           }),
-          proto
+          protoWrapper.proto
         )
     },
-  }) as EnumCtors<Enum, Proto>
+  }) as Type & EnumCtors<Enum, Proto>
 
-  protoWrapper.proto = makeProto(proxy)
+  protoWrapper.proto = actualMakeProto ? actualMakeProto(proxy) : {}
   return proxy
 }
