@@ -12,20 +12,21 @@ test('basic enum', (t) => {
 
   const MyEnum = makeEnum<MyEnumHKT>()
 
-  const a = MyEnum.a() as MyEnum<number> & Record<0 | 'value', unknown>
+  type Helper = MyEnum<unknown> & Record<0 | 'value', unknown>
+
+  const a = MyEnum.a() as Helper
   t.false(Object.getOwnPropertyDescriptor(a, 'case')?.writable)
   t.is(a.case, 'a')
   t.is(a.value, undefined)
   t.is(a[0], undefined)
 
-  const b = MyEnum.b({ value: 42 }) as MyEnum<number> &
-    Record<0 | 'value', unknown>
+  const b = MyEnum.b({ value: 42 }) as Helper
   t.false(Object.getOwnPropertyDescriptor(b, 'case')?.writable)
   t.is(b.case, 'b')
   t.is(b.value, 42)
   t.is(b[0], undefined)
 
-  const c = MyEnum.c(['hello']) as MyEnum<string> & Record<0 | 'value', unknown>
+  const c = MyEnum.c(['hello']) as Helper
   t.false(Object.getOwnPropertyDescriptor(c, 'case')?.writable)
   t.is(c.case, 'c')
   t.is(c.value, undefined)
@@ -61,27 +62,28 @@ test('enum with proto', (t) => {
     },
   }))
 
-  const a = MyEnum.a() as MyEnum<unknown> & Record<0 | 'value', unknown>
+  type Helper = MyEnum<unknown> & Record<0 | 'value', unknown>
+
+  const a = MyEnum.a() as Helper
   t.false(Object.getOwnPropertyDescriptor(a, 'case')?.writable)
   t.is(a.case, 'a')
   t.is(a.value, undefined)
   t.is(a[0], undefined)
   t.is(a.getValue(), undefined)
 
-  const b = MyEnum.b({ value: 42 }) as MyEnum<number> &
-    Record<0 | 'value', unknown>
+  const b = MyEnum.b({ value: 42 }) as Helper
   t.false(Object.getOwnPropertyDescriptor(b, 'case')?.writable)
   t.is(b.case, 'b')
   t.is(b.value, 42)
   t.is(b[0], undefined)
-  t.is(a.getValue(), undefined)
+  t.is(b.getValue(), 42)
 
-  const c = MyEnum.c(['hello']) as MyEnum<string> & Record<0 | 'value', unknown>
+  const c = MyEnum.c(['hello']) as Helper
   t.false(Object.getOwnPropertyDescriptor(c, 'case')?.writable)
   t.is(c.case, 'c')
   t.is(c.value, undefined)
   t.is(c[0], 'hello')
-  t.is(a.getValue(), undefined)
+  t.is(c.getValue(), 'hello')
 })
 
 test('enum with proto and type', (t) => {
@@ -124,37 +126,37 @@ test('enum with proto and type', (t) => {
     }
   )
 
-  const a = MyEnum.a() as MyEnum<unknown> & Record<0 | 'value', unknown>
+  type Helper = MyEnum<unknown> & Record<0 | 'value', unknown>
+
+  const a = MyEnum.a() as Helper
   t.false(Object.getOwnPropertyDescriptor(a, 'case')?.writable)
   t.is(a.case, 'a')
   t.is(a.value, undefined)
   t.is(a[0], undefined)
   t.is(a.getValue(), undefined)
 
-  const b = MyEnum.b({ value: 42 }) as MyEnum<number> &
-    Record<0 | 'value', unknown>
+  const b = MyEnum.b({ value: 42 }) as Helper
   t.false(Object.getOwnPropertyDescriptor(b, 'case')?.writable)
   t.is(b.case, 'b')
   t.is(b.value, 42)
   t.is(b[0], undefined)
-  t.is(a.getValue(), undefined)
+  t.is(b.getValue(), 42)
 
-  const c = MyEnum.c(['hello']) as MyEnum<string> & Record<0 | 'value', unknown>
+  const c = MyEnum.c(['hello']) as Helper
   t.false(Object.getOwnPropertyDescriptor(c, 'case')?.writable)
   t.is(c.case, 'c')
   t.is(c.value, undefined)
   t.is(c[0], 'hello')
-  t.is(a.getValue(), undefined)
+  t.is(c.getValue(), 'hello')
 
-  const make_a = MyEnum.make() as MyEnum<unknown> & Record<0 | 'value', unknown>
+  const make_a = MyEnum.make() as Helper
   t.false(Object.getOwnPropertyDescriptor(make_a, 'case')?.writable)
   t.is(make_a.case, 'a')
   t.is(make_a.value, undefined)
   t.is(make_a[0], undefined)
   t.is(make_a.getValue(), undefined)
 
-  const make_b = MyEnum.make(42) as MyEnum<unknown> &
-    Record<0 | 'value', unknown>
+  const make_b = MyEnum.make(42) as Helper
   t.false(Object.getOwnPropertyDescriptor(make_b, 'case')?.writable)
   t.is(make_b.case, 'b')
   t.is(make_b.value, 42)
@@ -179,33 +181,33 @@ test('enum with type', (t) => {
     },
   })
 
-  const a = MyEnum.a() as MyEnum<unknown> & Record<0 | 'value', unknown>
+  type Helper = MyEnum<unknown> & Record<0 | 'value', unknown>
+
+  const a = MyEnum.a() as Helper
   t.false(Object.getOwnPropertyDescriptor(a, 'case')?.writable)
   t.is(a.case, 'a')
   t.is(a.value, undefined)
   t.is(a[0], undefined)
 
-  const b = MyEnum.b({ value: 42 }) as MyEnum<number> &
-    Record<0 | 'value', unknown>
+  const b = MyEnum.b({ value: 42 }) as Helper
   t.false(Object.getOwnPropertyDescriptor(b, 'case')?.writable)
   t.is(b.case, 'b')
   t.is(b.value, 42)
   t.is(b[0], undefined)
 
-  const c = MyEnum.c(['hello']) as MyEnum<string> & Record<0 | 'value', unknown>
+  const c = MyEnum.c(['hello']) as Helper
   t.false(Object.getOwnPropertyDescriptor(c, 'case')?.writable)
   t.is(c.case, 'c')
   t.is(c.value, undefined)
   t.is(c[0], 'hello')
 
-  const make_a = MyEnum.make() as MyEnum<unknown> & Record<0 | 'value', unknown>
+  const make_a = MyEnum.make() as Helper
   t.false(Object.getOwnPropertyDescriptor(make_a, 'case')?.writable)
   t.is(make_a.case, 'a')
   t.is(make_a.value, undefined)
   t.is(make_a[0], undefined)
 
-  const make_b = MyEnum.make(42) as MyEnum<unknown> &
-    Record<0 | 'value', unknown>
+  const make_b = MyEnum.make(42) as Helper
   t.false(Object.getOwnPropertyDescriptor(make_b, 'case')?.writable)
   t.is(make_b.case, 'b')
   t.is(make_b.value, 42)

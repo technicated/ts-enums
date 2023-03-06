@@ -1,16 +1,18 @@
 import test from 'ava'
 import { Case } from './case'
-import { makeEnum } from './make-enum'
+import { HKT2 } from './hkt'
+import { makeEnum } from './make-enum-2'
 
 test('basic enum', (t) => {
-  type MyEnum =
-    | Case<'a'>
-    | Case<'b', { value: number }>
-    | Case<'c', [string, number]>
+  type MyEnum<U, V> = Case<'a'> | Case<'b', { value: U }> | Case<'c', [U, V]>
 
-  const MyEnum = makeEnum<MyEnum>()
+  interface MyEnumHKT extends HKT2 {
+    readonly type: MyEnum<this['_A'], this['_B']>
+  }
 
-  type Helper = MyEnum & Record<0 | 1 | 'value', unknown>
+  const MyEnum = makeEnum<MyEnumHKT>()
+
+  type Helper = MyEnum<unknown, unknown> & Record<0 | 1 | 'value', unknown>
 
   const a = MyEnum.a() as Helper
   t.false(Object.getOwnPropertyDescriptor(a, 'case')?.writable)
@@ -26,40 +28,44 @@ test('basic enum', (t) => {
   t.is(b[0], undefined)
   t.is(b[1], undefined)
 
-  const c = MyEnum.c(['hello', 42]) as Helper
+  const c = MyEnum.c([42, 'hello']) as Helper
   t.false(Object.getOwnPropertyDescriptor(c, 'case')?.writable)
   t.is(c.case, 'c')
   t.is(c.value, undefined)
-  t.is(c[0], 'hello')
-  t.is(c[1], 42)
+  t.is(c[0], 42)
+  t.is(c[1], 'hello')
 })
 
 test('enum with proto', (t) => {
-  interface MyEnumProto {
-    self: this
-    getNumber(): number
+  interface MyEnumProto<U, V> {
+    getBoth(): [U?, V?]
   }
 
-  type MyEnum = MyEnumProto &
-    (Case<'a'> | Case<'b', { value: number }> | Case<'c', [string, number]>)
+  interface MyEnumProtoHKT extends HKT2 {
+    readonly type: MyEnumProto<this['_A'], this['_B']>
+  }
 
-  const MyEnum = makeEnum<MyEnum, MyEnumProto>(() => ({
-    get self(): MyEnum {
-      return this
-    },
-    getNumber() {
+  type MyEnum<U, V> = MyEnumProto<U, V> &
+    (Case<'a'> | Case<'b', { value: U }> | Case<'c', [U, V]>)
+
+  interface MyEnumHKT extends HKT2 {
+    readonly type: MyEnum<this['_A'], this['_B']>
+  }
+
+  const MyEnum = makeEnum<MyEnumHKT, MyEnumProtoHKT>(() => ({
+    getBoth() {
       switch (this.case) {
         case 'a':
-          return -1
+          return []
         case 'b':
-          return this.value
+          return [this.value]
         case 'c':
-          return this[1] * this[1]
+          return [this[0], this[1]]
       }
     },
   }))
 
-  type Helper = MyEnum & Record<0 | 1 | 'value', unknown>
+  type Helper = MyEnum<unknown, unknown> & Record<0 | 1 | 'value', unknown>
 
   const a = MyEnum.a() as Helper
   t.false(Object.getOwnPropertyDescriptor(a, 'case')?.writable)
@@ -67,8 +73,7 @@ test('enum with proto', (t) => {
   t.is(a.value, undefined)
   t.is(a[0], undefined)
   t.is(a[1], undefined)
-  t.is(a.self, a)
-  t.is(a.getNumber(), -1)
+  t.deepEqual(a.getBoth(), [])
 
   const b = MyEnum.b({ value: 42 }) as Helper
   t.false(Object.getOwnPropertyDescriptor(b, 'case')?.writable)
@@ -76,63 +81,65 @@ test('enum with proto', (t) => {
   t.is(b.value, 42)
   t.is(b[0], undefined)
   t.is(b[1], undefined)
-  t.is(b.self, b)
-  t.is(b.getNumber(), 42)
+  t.deepEqual(b.getBoth(), [42])
 
-  const c = MyEnum.c(['hello', 42]) as Helper
+  const c = MyEnum.c([42, 'hello']) as Helper
   t.false(Object.getOwnPropertyDescriptor(c, 'case')?.writable)
   t.is(c.case, 'c')
   t.is(c.value, undefined)
-  t.is(c[0], 'hello')
-  t.is(c[1], 42)
-  t.is(c.self, c)
-  t.is(c.getNumber(), 1764)
+  t.is(c[0], 42)
+  t.is(c[1], 'hello')
+  t.deepEqual(c.getBoth(), [42, 'hello'])
 })
 
 test('enum with proto and type', (t) => {
-  interface MyEnumProto {
-    self: this
-    getNumber(): number
+  interface MyEnumProto<U, V> {
+    getBoth(): [U?, V?]
+  }
+
+  interface MyEnumProtoHKT extends HKT2 {
+    readonly type: MyEnumProto<this['_A'], this['_B']>
+  }
+
+  type MyEnum<U, V> = MyEnumProto<U, V> &
+    (Case<'a'> | Case<'b', { value: U }> | Case<'c', [U, V]>)
+
+  interface MyEnumHKT extends HKT2 {
+    readonly type: MyEnum<this['_A'], this['_B']>
   }
 
   interface MyEnumType {
-    make(...args: [] | [n: number] | [n: number, s: string]): MyEnum
+    make<U, V>(...args: [] | [U] | [U, V]): MyEnum<U, V>
   }
 
-  type MyEnum = MyEnumProto &
-    (Case<'a'> | Case<'b', { value: number }> | Case<'c', [string, number]>)
-
-  const MyEnum = makeEnum<MyEnum, MyEnumProto, MyEnumType>(
+  const MyEnum = makeEnum<MyEnumHKT, MyEnumProtoHKT, MyEnumType>(
     () => ({
-      get self(): MyEnum {
-        return this
-      },
-      getNumber() {
+      getBoth() {
         switch (this.case) {
           case 'a':
-            return -1
+            return []
           case 'b':
-            return this.value
+            return [this.value]
           case 'c':
-            return this[1] * this[1]
+            return [this[0], this[1]]
         }
       },
     }),
     {
-      make(...args): MyEnum {
+      make<U, V>(...args: [] | [U] | [U, V]): MyEnum<U, V> {
         switch (args.length) {
           case 0:
             return MyEnum.a()
           case 1:
             return MyEnum.b({ value: args[0] })
           case 2:
-            return MyEnum.c([args[1], args[0]])
+            return MyEnum.c(args)
         }
       },
     }
   )
 
-  type Helper = MyEnum & Record<0 | 1 | 'value', unknown>
+  type Helper = MyEnum<unknown, unknown> & Record<0 | 1 | 'value', unknown>
 
   const a = MyEnum.a() as Helper
   t.false(Object.getOwnPropertyDescriptor(a, 'case')?.writable)
@@ -140,8 +147,7 @@ test('enum with proto and type', (t) => {
   t.is(a.value, undefined)
   t.is(a[0], undefined)
   t.is(a[1], undefined)
-  t.is(a.self, a)
-  t.is(a.getNumber(), -1)
+  t.deepEqual(a.getBoth(), [])
 
   const b = MyEnum.b({ value: 42 }) as Helper
   t.false(Object.getOwnPropertyDescriptor(b, 'case')?.writable)
@@ -149,17 +155,15 @@ test('enum with proto and type', (t) => {
   t.is(b.value, 42)
   t.is(b[0], undefined)
   t.is(b[1], undefined)
-  t.is(b.self, b)
-  t.is(b.getNumber(), 42)
+  t.deepEqual(b.getBoth(), [42])
 
-  const c = MyEnum.c(['hello', 42]) as Helper
+  const c = MyEnum.c([42, 'hello']) as Helper
   t.false(Object.getOwnPropertyDescriptor(c, 'case')?.writable)
   t.is(c.case, 'c')
   t.is(c.value, undefined)
-  t.is(c[0], 'hello')
-  t.is(c[1], 42)
-  t.is(c.self, c)
-  t.is(c.getNumber(), 1764)
+  t.is(c[0], 42)
+  t.is(c[1], 'hello')
+  t.deepEqual(c.getBoth(), [42, 'hello'])
 
   const make_a = MyEnum.make() as Helper
   t.false(Object.getOwnPropertyDescriptor(make_a, 'case')?.writable)
@@ -167,8 +171,7 @@ test('enum with proto and type', (t) => {
   t.is(make_a.value, undefined)
   t.is(make_a[0], undefined)
   t.is(make_a[1], undefined)
-  t.is(make_a.self, make_a)
-  t.is(make_a.getNumber(), -1)
+  t.deepEqual(make_a.getBoth(), [])
 
   const make_b = MyEnum.make(42) as Helper
   t.false(Object.getOwnPropertyDescriptor(make_b, 'case')?.writable)
@@ -176,43 +179,42 @@ test('enum with proto and type', (t) => {
   t.is(make_b.value, 42)
   t.is(make_b[0], undefined)
   t.is(make_b[1], undefined)
-  t.is(make_b.self, make_b)
-  t.is(make_b.getNumber(), 42)
+  t.deepEqual(make_b.getBoth(), [42])
 
-  const make_c = MyEnum.make(42, 'hello') as Helper
+  const make_c = MyEnum.make('hello', 42) as Helper
   t.false(Object.getOwnPropertyDescriptor(make_c, 'case')?.writable)
   t.is(make_c.case, 'c')
   t.is(make_c.value, undefined)
   t.is(make_c[0], 'hello')
   t.is(make_c[1], 42)
-  t.is(make_c.self, make_c)
-  t.is(make_c.getNumber(), 1764)
+  t.deepEqual(make_c.getBoth(), ['hello', 42])
 })
 
 test('enum with type', (t) => {
-  interface MyEnumType {
-    make(...args: [] | [n: number] | [n: number, s: string]): MyEnum
+  type MyEnum<U, V> = Case<'a'> | Case<'b', { value: U }> | Case<'c', [U, V]>
+
+  interface MyEnumHKT extends HKT2 {
+    readonly type: MyEnum<this['_A'], this['_B']>
   }
 
-  type MyEnum =
-    | Case<'a'>
-    | Case<'b', { value: number }>
-    | Case<'c', [string, number]>
+  interface MyEnumType {
+    make<U, V>(...args: [] | [U] | [U, V]): MyEnum<U, V>
+  }
 
-  const MyEnum = makeEnum<MyEnum, MyEnumType>({
-    make(...args): MyEnum {
+  const MyEnum = makeEnum<MyEnumHKT, MyEnumType>({
+    make<U, V>(...args: [] | [U] | [U, V]): MyEnum<U, V> {
       switch (args.length) {
         case 0:
           return MyEnum.a()
         case 1:
           return MyEnum.b({ value: args[0] })
         case 2:
-          return MyEnum.c([args[1], args[0]])
+          return MyEnum.c(args)
       }
     },
   })
 
-  type Helper = MyEnum & Record<0 | 1 | 'value', unknown>
+  type Helper = MyEnum<unknown, unknown> & Record<0 | 1 | 'value', unknown>
 
   const a = MyEnum.a() as Helper
   t.false(Object.getOwnPropertyDescriptor(a, 'case')?.writable)
@@ -228,12 +230,12 @@ test('enum with type', (t) => {
   t.is(b[0], undefined)
   t.is(b[1], undefined)
 
-  const c = MyEnum.c(['hello', 42]) as Helper
+  const c = MyEnum.c([42, 'hello']) as Helper
   t.false(Object.getOwnPropertyDescriptor(c, 'case')?.writable)
   t.is(c.case, 'c')
   t.is(c.value, undefined)
-  t.is(c[0], 'hello')
-  t.is(c[1], 42)
+  t.is(c[0], 42)
+  t.is(c[1], 'hello')
 
   const make_a = MyEnum.make() as Helper
   t.false(Object.getOwnPropertyDescriptor(make_a, 'case')?.writable)
@@ -249,7 +251,7 @@ test('enum with type', (t) => {
   t.is(make_b[0], undefined)
   t.is(make_b[1], undefined)
 
-  const make_c = MyEnum.make(42, 'hello') as Helper
+  const make_c = MyEnum.make('hello', 42) as Helper
   t.false(Object.getOwnPropertyDescriptor(make_c, 'case')?.writable)
   t.is(make_c.case, 'c')
   t.is(make_c.value, undefined)
