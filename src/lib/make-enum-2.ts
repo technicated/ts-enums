@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/ban-types */
 
-import { HKT, Kind } from './hkt'
+import { HKT2, Kind2 } from './hkt'
 import { Incr } from './type-arithmetic'
 import { EnumShape } from './types'
 
-type EnumHKTShape = HKT & { type: EnumShape }
-type ProtoHKTShape = HKT & { type: object }
+type EnumHKTShape = HKT2 & { type: EnumShape }
+type ProtoHKTShape = HKT2 & { type: object }
 
 type RecursiveCtorArgs<
   Obj extends object,
@@ -18,27 +18,31 @@ type EnumCtorArgs<
   Enum extends EnumHKTShape,
   Case extends Enum['type']['case'],
   Proto extends ProtoHKTShape,
-  A
-> = Kind<Enum, A> & {
+  A,
+  B
+> = Kind2<Enum, A, B> & {
   _: unknown
   case: Case
 } extends infer _T
-  ? { _: unknown } extends Omit<_T, 'case' | keyof Kind<Proto, A>>
+  ? { _: unknown } extends Omit<_T, 'case' | keyof Kind2<Proto, A, B>>
     ? []
-    : 0 extends keyof Omit<_T, 'case' | '_' | keyof Kind<Proto, A>>
+    : 0 extends keyof Omit<_T, 'case' | '_' | keyof Kind2<Proto, A, B>>
     ? [RecursiveCtorArgs<Omit<_T, 'case'>>]
-    : [Omit<_T, 'case' | '_' | keyof Kind<Proto, A>>]
+    : [Omit<_T, 'case' | '_' | keyof Kind2<Proto, A, B>>]
   : never
 
 type EnumCtors<Enum extends EnumHKTShape, Proto extends ProtoHKTShape> = {
-  [Case in Enum['type']['case']]: <A>(
-    ...args: EnumCtorArgs<Enum, Case, Proto, A>
-  ) => Kind<Enum, A>
+  [Case in Enum['type']['case']]: <A, B>(
+    ...args: EnumCtorArgs<Enum, Case, Proto, A, B>
+  ) => Kind2<Enum, A, B>
 }
 
-type MakeProtoFn<Enum extends EnumHKTShape, Proto extends ProtoHKTShape> = <A>(
+type MakeProtoFn<Enum extends EnumHKTShape, Proto extends ProtoHKTShape> = <
+  A,
+  B
+>(
   e: EnumCtors<Enum, Proto>
-) => Kind<Proto, A> & ThisType<Kind<Enum, A>>
+) => Kind2<Proto, A, B> & ThisType<Kind2<Enum, A, B>>
 
 export function makeEnum<Enum extends EnumHKTShape>(): EnumCtors<
   Enum,
