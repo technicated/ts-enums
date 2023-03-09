@@ -4,7 +4,7 @@ export type Length<T extends unknown[]> = T extends {
   ? L
   : never
 
-type BuildTuple<L extends number, T extends unknown[] = []> = T extends {
+export type BuildTuple<L extends number, T extends unknown[] = []> = T extends {
   length: L
 }
   ? T
