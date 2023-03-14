@@ -2,10 +2,10 @@
 
 import { HKT, Kind } from './hkt'
 import { Incr } from './type-arithmetic'
-import { EnumShape } from './types'
+import * as fromTypes from './types'
 
-type EnumHKTShape = HKT & { type: EnumShape }
-type ProtoHKTShape = HKT & { type: object }
+type EnumShape = HKT & { type: fromTypes.EnumShape }
+type ProtoShape = HKT & { type: object }
 
 type RecursiveCtorArgs<
   Obj extends object,
@@ -15,9 +15,9 @@ type RecursiveCtorArgs<
   : []
 
 type EnumCtorArgs<
-  Enum extends EnumHKTShape,
+  Enum extends EnumShape,
   Case extends Enum['type']['case'],
-  Proto extends ProtoHKTShape,
+  Proto extends ProtoShape,
   A
 > = Kind<Enum, A> & {
   _: unknown
@@ -30,38 +30,37 @@ type EnumCtorArgs<
     : [Omit<_T, 'case' | '_' | keyof Kind<Proto, A>>]
   : never
 
-type EnumCtors<Enum extends EnumHKTShape, Proto extends ProtoHKTShape> = {
+type EnumCtors<Enum extends EnumShape, Proto extends ProtoShape> = {
   [Case in Enum['type']['case']]: <A>(
     ...args: EnumCtorArgs<Enum, Case, Proto, A>
   ) => Kind<Enum, A>
 }
 
-type MakeProtoFn<Enum extends EnumHKTShape, Proto extends ProtoHKTShape> = <A>(
+type MakeProtoFn<Enum extends EnumShape, Proto extends ProtoShape> = <A>(
   e: EnumCtors<Enum, Proto>
 ) => Kind<Proto, A> & ThisType<Kind<Enum, A>>
 
-export function makeEnum<Enum extends EnumHKTShape>(): EnumCtors<
+export function makeEnum<Enum extends EnumShape>(): EnumCtors<
   Enum,
   { type: {} }
 >
+export function makeEnum<Enum extends EnumShape, Proto extends ProtoShape>(
+  makeProto: MakeProtoFn<Enum, Proto>
+): EnumCtors<Enum, Proto>
 export function makeEnum<
-  Enum extends EnumHKTShape,
-  Proto extends ProtoHKTShape
->(makeProto: MakeProtoFn<Enum, Proto>): EnumCtors<Enum, Proto>
-export function makeEnum<
-  Enum extends EnumHKTShape,
-  Proto extends ProtoHKTShape,
+  Enum extends EnumShape,
+  Proto extends ProtoShape,
   Type extends object
 >(
   makeProto: MakeProtoFn<Enum, Proto>,
   type: Type
 ): Type & EnumCtors<Enum, Proto>
-export function makeEnum<Enum extends EnumHKTShape, Type extends object>(
+export function makeEnum<Enum extends EnumShape, Type extends object>(
   type: Type
 ): Type & EnumCtors<Enum, { type: {} }>
 export function makeEnum<
-  Enum extends EnumHKTShape,
-  Proto extends ProtoHKTShape,
+  Enum extends EnumShape,
+  Proto extends ProtoShape,
   Type extends object
 >(
   makeProto?: MakeProtoFn<Enum, Proto> | Type,
