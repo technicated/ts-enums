@@ -1,64 +1,12 @@
 /* eslint-disable @typescript-eslint/ban-types */
 
-import { Incr } from './type-arithmetic'
-import { EnumShape } from './types'
-
-type RecursiveCtorArgs<
-  Obj extends object,
-  Index extends number = 0
-> = Obj extends Record<Index, infer V>
-  ? [V, ...RecursiveCtorArgs<Omit<Obj, Index>, Incr<Index>>]
-  : []
-
-type EnumCtorArgs<
-  Enum extends EnumShape,
-  Case extends Enum['case'],
-  Proto extends object
-> = Enum & {
-  _: unknown
-  case: Case
-} extends infer _T
-  ? { _: unknown } extends Omit<_T, 'case' | keyof Proto>
-    ? []
-    : 0 extends keyof Omit<_T, 'case' | '_' | keyof Proto>
-    ? [RecursiveCtorArgs<Omit<_T, 'case'>>]
-    : [Omit<_T, 'case' | '_' | keyof Proto>]
-  : never
-
-type EnumCtors<Enum extends EnumShape, Proto extends object> = {
-  [Case in Enum['case']]: (...args: EnumCtorArgs<Enum, Case, Proto>) => Enum
-}
-
-type MakeProtoFn<Enum extends EnumShape, Proto extends object> = (
-  e: EnumCtors<Enum, Proto>
-) => Proto & ThisType<Enum>
-
-export function makeEnum<Enum extends EnumShape>(): EnumCtors<Enum, {}>
-export function makeEnum<Enum extends EnumShape, Proto extends object>(
-  makeProto: MakeProtoFn<Enum, Proto>
-): EnumCtors<Enum, Proto>
-export function makeEnum<
-  Enum extends EnumShape,
-  Proto extends object,
-  Type extends object
->(
-  makeProto: MakeProtoFn<Enum, Proto>,
-  type: Type
-): Type & EnumCtors<Enum, Proto>
-export function makeEnum<Enum extends EnumShape, Type extends object>(
-  type: Type
-): Type & EnumCtors<Enum, {}>
-export function makeEnum<
-  Enum extends EnumShape,
-  Proto extends object,
-  Type extends object
->(
-  makeProto?: MakeProtoFn<Enum, Proto> | Type,
-  type?: Type
-): Type & EnumCtors<Enum, Proto> {
+export const makeEnum = (makeProto?: unknown, type?: unknown): unknown => {
   const protoWrapper: { proto: object } = { proto: {} }
 
-  const actualMakeProto = typeof makeProto === 'object' ? undefined : makeProto
+  const actualMakeProto = (
+    typeof makeProto === 'object' ? undefined : makeProto
+  ) as Function | undefined
+
   const actualType = typeof makeProto === 'object' ? makeProto : type
 
   const proxy = new Proxy(actualType || {}, {
@@ -78,7 +26,7 @@ export function makeEnum<
           protoWrapper.proto
         )
     },
-  }) as Type & EnumCtors<Enum, Proto>
+  })
 
   protoWrapper.proto = actualMakeProto ? actualMakeProto(proxy) : {}
   return proxy

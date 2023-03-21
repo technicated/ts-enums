@@ -1,5 +1,5 @@
 import test from 'ava'
-import { Case } from './case'
+import { Case } from '../case'
 import { makeEnum } from './make-enum'
 
 test('basic enum', (t) => {

@@ -1,9 +1,9 @@
-import { HKT, Kind } from './hkt'
-import { Incr } from './type-arithmetic'
-import * as types from './types'
+import { HKT, Kind } from '../hkt'
+import * as types from '../make-enum-0/types'
+import { Incr } from '../type-arithmetic'
 
 export type EnumShape = HKT & { type: types.EnumShape }
-export type ProtoShape = HKT & { type: object }
+export type ProtoShape = HKT & { type: types.ProtoShape }
 
 type RecursiveCtorArgs<
   Obj extends object,
