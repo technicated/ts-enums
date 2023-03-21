@@ -1,8 +1,7 @@
-import { Incr } from './type-arithmetic'
+import { Incr } from '../type-arithmetic'
 
-export type EnumShape = {
-  readonly case: string
-}
+export type EnumShape = { readonly case: string }
+export type ProtoShape = object
 
 type RecursiveCtorArgs<
   Obj extends object,
@@ -14,7 +13,7 @@ type RecursiveCtorArgs<
 type EnumCtorArgs<
   Enum extends EnumShape,
   Case extends Enum['case'],
-  Proto extends object
+  Proto extends ProtoShape
 > = Enum & {
   _: unknown
   case: Case
@@ -26,10 +25,10 @@ type EnumCtorArgs<
     : [Omit<_T, 'case' | '_' | keyof Proto>]
   : never
 
-export type EnumCtors<Enum extends EnumShape, Proto extends object> = {
+export type EnumCtors<Enum extends EnumShape, Proto extends ProtoShape> = {
   [Case in Enum['case']]: (...args: EnumCtorArgs<Enum, Case, Proto>) => Enum
 }
 
-export type MakeProtoFn<Enum extends EnumShape, Proto extends object> = (
+export type MakeProtoFn<Enum extends EnumShape, Proto extends ProtoShape> = (
   e: EnumCtors<Enum, Proto>
 ) => Proto & ThisType<Enum>
