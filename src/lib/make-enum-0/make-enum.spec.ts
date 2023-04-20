@@ -1,6 +1,7 @@
 import test from 'ava'
-import { Case } from '../case'
+import { Case, cases } from '../case'
 import { makeEnum } from './make-enum'
+import { CasesOf } from './types'
 
 test('basic enum', (t) => {
   type MyEnum =
@@ -14,11 +15,12 @@ test('basic enum', (t) => {
 
   const performCheck = (
     v: Helper,
-    c: string,
+    c: CasesOf<typeof MyEnum>,
     payload: Partial<Record<0 | 1 | 'value', unknown>>
   ): void => {
     t.false(Object.getOwnPropertyDescriptor(v, 'case')?.writable)
     t.is(v.case, c)
+    t.is(MyEnum[cases][c], c)
     t.deepEqual(v[0], payload[0])
     t.deepEqual(v[1], payload[1])
     t.deepEqual(v.value, payload.value)
@@ -91,12 +93,13 @@ test('enum with proto', (t) => {
 
   const performCheck = (
     v: Helper,
-    c: string,
+    c: CasesOf<typeof MyEnum>,
     payload: Partial<Record<0 | 1 | 'value', unknown>>,
     number: unknown
   ): void => {
     t.false(Object.getOwnPropertyDescriptor(v, 'case')?.writable)
     t.is(v.case, c)
+    t.is(MyEnum[cases][c], c)
     t.deepEqual(v[0], payload[0])
     t.deepEqual(v[1], payload[1])
     t.deepEqual(v.value, payload.value)
@@ -208,12 +211,13 @@ test('enum with proto and type', (t) => {
 
   const performCheck = (
     v: Helper,
-    c: string,
+    c: CasesOf<typeof MyEnum>,
     payload: Partial<Record<0 | 1 | 'value', unknown>>,
     number: unknown
   ): void => {
     t.false(Object.getOwnPropertyDescriptor(v, 'case')?.writable)
     t.is(v.case, c)
+    t.is(MyEnum[cases][c], c)
     t.deepEqual(v[0], payload[0])
     t.deepEqual(v[1], payload[1])
     t.deepEqual(v.value, payload.value)
@@ -334,11 +338,12 @@ test('enum with type', (t) => {
 
   const performCheck = (
     v: Helper,
-    c: string,
+    c: CasesOf<typeof MyEnum>,
     payload: Partial<Record<0 | 1 | 'value', unknown>>
   ): void => {
     t.false(Object.getOwnPropertyDescriptor(v, 'case')?.writable)
     t.is(v.case, c)
+    t.is(MyEnum[cases][c], c)
     t.deepEqual(v[0], payload[0])
     t.deepEqual(v[1], payload[1])
     t.deepEqual(v.value, payload.value)

@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-types */
 
+import { cases } from './case'
+
 export const makeEnum = (makeProto?: unknown, type?: unknown): unknown => {
   const protoWrapper: { proto: object } = { proto: {} }
 
@@ -13,6 +15,10 @@ export const makeEnum = (makeProto?: unknown, type?: unknown): unknown => {
     get(type: Record<string | symbol, unknown>, prop) {
       if (prop in type) {
         return type[prop]
+      }
+
+      if (prop === cases) {
+        return new Proxy({}, { get: (_: unknown, prop) => prop })
       }
 
       return (payload: object) =>

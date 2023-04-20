@@ -16,3 +16,5 @@ type ProcessPayload<Payload extends object> = Payload extends unknown[]
 export type Case<Name extends string, Payload extends object = {}> = {
   readonly case: Name
 } & ProcessPayload<Payload>
+
+export const cases: unique symbol = Symbol('Enum cases list')

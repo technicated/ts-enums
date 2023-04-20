@@ -1,4 +1,4 @@
-export { Case } from './lib/case'
+export * from './lib/case'
 export * from './lib/hkt'
 export { makeEnum } from './lib/make-enum-0/make-enum'
 export { makeEnum1 } from './lib/make-enum-1/make-enum'
