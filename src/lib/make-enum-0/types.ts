@@ -1,3 +1,4 @@
+import { cases } from '../case'
 import { Incr } from '../type-arithmetic'
 
 export type EnumShape = { readonly case: string }
@@ -25,9 +26,20 @@ type EnumCtorArgs<
     : [Omit<_T, 'case' | '_' | keyof Proto>]
   : never
 
+type CasesOfEnum<Enum extends EnumShape> = {
+  [Case in Enum['case']]: Case
+}
+
+export type CasesOf<EnumType> = EnumType extends EnumCtors<
+  infer Enum,
+  ProtoShape
+>
+  ? keyof CasesOfEnum<Enum>
+  : never
+
 export type EnumCtors<Enum extends EnumShape, Proto extends ProtoShape> = {
   [Case in Enum['case']]: (...args: EnumCtorArgs<Enum, Case, Proto>) => Enum
-}
+} & Record<typeof cases, CasesOfEnum<Enum>>
 
 export type MakeProtoFn<Enum extends EnumShape, Proto extends ProtoShape> = (
   e: EnumCtors<Enum, Proto>

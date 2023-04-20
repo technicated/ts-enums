@@ -1,7 +1,8 @@
 import test from 'ava'
-import { Case } from '../case'
+import { Case, cases } from '../case'
 import { HKT6 } from '../hkt'
 import { makeEnum6 } from './make-enum'
+import { CasesOf } from './types'
 
 test('basic enum', (t) => {
   type MyEnum<A, B, C, D, E, F> =
@@ -31,11 +32,12 @@ test('basic enum', (t) => {
 
   const performCheck = (
     v: Helper,
-    c: string,
+    c: CasesOf<typeof MyEnum>,
     payload: Partial<[unknown, unknown, unknown, unknown, unknown, unknown]>
   ): void => {
     t.false(Object.getOwnPropertyDescriptor(v, 'case')?.writable)
     t.is(v.case, c)
+    t.is(MyEnum[cases][c], c)
     t.deepEqual(v[0], payload[0])
     t.deepEqual(v[1], payload[1])
     t.deepEqual(v[2], payload[2])
@@ -137,12 +139,13 @@ test('enum with proto', (t) => {
 
   const performCheck = (
     v: Helper,
-    c: string,
+    c: CasesOf<typeof MyEnum>,
     payload: Partial<[unknown, unknown, unknown, unknown, unknown, unknown]>,
     prev: unknown
   ): void => {
     t.false(Object.getOwnPropertyDescriptor(v, 'case')?.writable)
     t.is(v.case, c)
+    t.is(MyEnum[cases][c], c)
     t.deepEqual(v[0], payload[0])
     t.deepEqual(v[1], payload[1])
     t.deepEqual(v[2], payload[2])
@@ -304,12 +307,13 @@ test('enum with proto and type', (t) => {
 
   const performCheck = (
     v: Helper,
-    c: string,
+    c: CasesOf<typeof MyEnum>,
     payload: Partial<[unknown, unknown, unknown, unknown, unknown, unknown]>,
     prev: unknown
   ): void => {
     t.false(Object.getOwnPropertyDescriptor(v, 'case')?.writable)
     t.is(v.case, c)
+    t.is(MyEnum[cases][c], c)
     t.deepEqual(v[0], payload[0])
     t.deepEqual(v[1], payload[1])
     t.deepEqual(v[2], payload[2])
@@ -470,11 +474,12 @@ test('enum with type', (t) => {
 
   const performCheck = (
     v: Helper,
-    c: string,
+    c: CasesOf<typeof MyEnum>,
     payload: Partial<[unknown, unknown, unknown, unknown, unknown, unknown]>
   ): void => {
     t.false(Object.getOwnPropertyDescriptor(v, 'case')?.writable)
     t.is(v.case, c)
+    t.is(MyEnum[cases][c], c)
     t.deepEqual(v[0], payload[0])
     t.deepEqual(v[1], payload[1])
     t.deepEqual(v[2], payload[2])
