@@ -18,3 +18,8 @@ export type Case<Name extends string, Payload extends object = {}> = {
 } & ProcessPayload<Payload>
 
 export const cases: unique symbol = Symbol('Enum cases list')
+
+export type Cast<
+  Enum extends { readonly case: string },
+  C extends Enum['case']
+> = Enum & Case<C>
