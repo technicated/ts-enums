@@ -20,14 +20,18 @@ type EnumCtorArgs<
   A,
   B,
   C
-> = Kind3<Enum, A, B, C> & {
-  _: unknown
-  case: Case
-} extends infer _T
-  ? { _: unknown } extends Omit<_T, 'case' | keyof Kind3<Proto, A, B, C>>
+> = Kind3<Enum, A, B, C> & { _: unknown; case: Case } extends infer _T
+  ? keyof Omit<_T, 'case' | keyof Kind3<Proto, A, B, C>> extends keyof {
+      _: unknown
+    }
     ? []
     : 0 extends keyof Omit<_T, 'case' | '_' | keyof Kind3<Proto, A, B, C>>
     ? [RecursiveCtorArgs<Omit<_T, 'case'>>]
+    : Record<string, never> extends Omit<
+        _T,
+        'case' | '_' | keyof Kind3<Proto, A, B, C>
+      >
+    ? Partial<[Omit<_T, 'case' | '_' | keyof Kind3<Proto, A, B, C>>]>
     : [Omit<_T, 'case' | '_' | keyof Kind3<Proto, A, B, C>>]
   : never
 

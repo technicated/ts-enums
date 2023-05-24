@@ -67,6 +67,7 @@ test('basic property owning', (t) => {
 test('enum with proto', (t) => {
   interface MyEnumProto {
     self: this
+
     getNumber(): number
   }
 
@@ -120,6 +121,7 @@ test('enum with proto', (t) => {
 test('property owning with proto', (t) => {
   interface MyEnumProto {
     self: this
+
     getNumber(): number
   }
 
@@ -167,6 +169,7 @@ test('property owning with proto', (t) => {
 test('enum with proto and type', (t) => {
   interface MyEnumProto {
     self: this
+
     getNumber(): number
   }
 
@@ -247,6 +250,7 @@ test('enum with proto and type', (t) => {
 test('property owning with proto and type', (t) => {
   interface MyEnumProto {
     self: this
+
     getNumber(): number
   }
 
@@ -411,4 +415,36 @@ test('property owning with type', (t) => {
 
   const c = MyEnum.c(['hello', 42])
   performCheck(c, [false, true, true])
+})
+
+test('fully optional object payload', (t) => {
+  type MyEnum = Case<'main', { a?: number; b?: string }> | Case<'other'>
+
+  const MyEnum = makeEnum<MyEnum>()
+
+  type Helper = MyEnum & Record<'a' | 'b', unknown>
+
+  const performCheck = (
+    v: Helper,
+    c: CasesOf<typeof MyEnum>,
+    payload: Partial<Record<'a' | 'b', unknown>>
+  ): void => {
+    t.false(Object.getOwnPropertyDescriptor(v, 'case')?.writable)
+    t.is(v.case, c)
+    t.is(MyEnum[cases][c], c)
+    t.deepEqual(v.a, payload.a)
+    t.deepEqual(v.b, payload.b)
+  }
+
+  const main = MyEnum.main() as Helper
+  performCheck(main, 'main', {})
+
+  const main_a = MyEnum.main({ a: 42 }) as Helper
+  performCheck(main_a, 'main', { a: 42 })
+
+  const main_b = MyEnum.main({ b: 'hello world' }) as Helper
+  performCheck(main_b, 'main', { b: 'hello world' })
+
+  const main_ab = MyEnum.main({ a: 42, b: 'hello world' }) as Helper
+  performCheck(main_ab, 'main', { a: 42, b: 'hello world' })
 })
