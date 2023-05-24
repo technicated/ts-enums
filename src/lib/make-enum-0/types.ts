@@ -15,14 +15,13 @@ type EnumCtorArgs<
   Enum extends EnumShape,
   Case extends Enum['case'],
   Proto extends ProtoShape
-> = Enum & {
-  _: unknown
-  case: Case
-} extends infer _T
-  ? { _: unknown } extends Omit<_T, 'case' | keyof Proto>
+> = Enum & { _: unknown; case: Case } extends infer _T
+  ? keyof Omit<_T, 'case' | keyof Proto> extends keyof { _: unknown }
     ? []
     : 0 extends keyof Omit<_T, 'case' | '_' | keyof Proto>
     ? [RecursiveCtorArgs<Omit<_T, 'case'>>]
+    : Record<string, never> extends Omit<_T, 'case' | '_' | keyof Proto>
+    ? Partial<[Omit<_T, 'case' | '_' | keyof Proto>]>
     : [Omit<_T, 'case' | '_' | keyof Proto>]
   : never
 

@@ -339,3 +339,55 @@ test('enum with type', (t) => {
   const make_d = MyEnum.make('hello', 3, 'world', false) as Helper
   performCheck(make_d, 'd', ['hello', 3, 'world', false])
 })
+
+test('fully optional object payload', (t) => {
+  type MyEnum<A, B, C, D> =
+    | Case<'main', { a?: A; b?: B; c?: C; d?: D }>
+    | Case<'other'>
+
+  interface MyEnumHKT extends HKT4 {
+    readonly type: MyEnum<this['_A'], this['_B'], this['_C'], this['_D']>
+  }
+
+  const MyEnum = makeEnum4<MyEnumHKT>()
+
+  type Helper = MyEnum<unknown, unknown, unknown, unknown> &
+    Record<'a' | 'b' | 'c' | 'd', unknown>
+
+  const performCheck = (
+    v: Helper,
+    c: CasesOf<typeof MyEnum>,
+    payload: Partial<Record<'a' | 'b' | 'c' | 'd', unknown>>
+  ): void => {
+    t.false(Object.getOwnPropertyDescriptor(v, 'case')?.writable)
+    t.is(v.case, c)
+    t.is(MyEnum[cases][c], c)
+    t.deepEqual(v.a, payload.a)
+    t.deepEqual(v.b, payload.b)
+    t.deepEqual(v.c, payload.c)
+    t.deepEqual(v.d, payload.d)
+  }
+
+  const main = MyEnum.main() as Helper
+  performCheck(main, 'main', {})
+
+  const main_a = MyEnum.main({ a: 'hello' }) as Helper
+  performCheck(main_a, 'main', { a: 'hello' })
+
+  const main_b = MyEnum.main({ b: 2 }) as Helper
+  performCheck(main_b, 'main', { b: 2 })
+
+  const main_c = MyEnum.main({ c: 'hello' }) as Helper
+  performCheck(main_c, 'main', { c: 'hello' })
+
+  const main_d = MyEnum.main({ d: true }) as Helper
+  performCheck(main_d, 'main', { d: true })
+
+  const main_all = MyEnum.main({
+    a: 2,
+    b: 'hello',
+    c: 'world',
+    d: true,
+  }) as Helper
+  performCheck(main_all, 'main', { a: 2, b: 'hello', c: 'world', d: true })
+})
