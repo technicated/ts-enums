@@ -1,6 +1,6 @@
 import test from 'ava'
 import { Case, cases } from '../case'
-import { makeEnum } from './make-enum'
+import { casePath, CasePath, makeEnum } from './make-enum'
 import { CasesOf } from './types'
 
 test('basic enum', (t) => {
@@ -447,4 +447,39 @@ test('fully optional object payload', (t) => {
 
   const main_ab = MyEnum.main({ a: 42, b: 'hello world' }) as Helper
   performCheck(main_ab, 'main', { a: 42, b: 'hello world' })
+})
+
+test('case path', (t) => {
+  type MyEnum =
+    | Case<'a'>
+    | Case<'b', { value: number }>
+    | Case<'c', [string, number]>
+
+  const MyEnum = makeEnum<MyEnum>()
+
+  const cp = new CasePath<MyEnum, [string, number]>(
+    (root) =>
+      root.case === 'c'
+        ? { case: 'some', value: [root[0], root[1]] }
+        : { case: 'none' },
+    (value) => MyEnum.c(value)
+  )
+
+  t.deepEqual(cp.extract(MyEnum.a()), { case: 'none' })
+  t.deepEqual(cp.extract(MyEnum.b({ value: 42 })), { case: 'none' })
+  t.deepEqual(cp.extract(MyEnum.c(['hello world', 42])), {
+    case: 'some',
+    value: ['hello world', 42],
+  })
+
+  const cp2 = casePath(MyEnum, 'c')
+
+  t.deepEqual(cp2.extract(MyEnum.a()), { case: 'none' })
+  t.deepEqual(cp2.extract(MyEnum.b({ value: 42 })), { case: 'none' })
+  t.deepEqual(cp2.extract(MyEnum.c(['hello world', 42])), {
+    case: 'some',
+    value: { 0: 'hello world', 1: 42 } as any,
+  })
+
+  t.deepEqual(cp2.embed(['foo', 42]), MyEnum.c(['foo', 42]))
 })
