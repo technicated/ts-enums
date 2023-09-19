@@ -11,7 +11,7 @@ test('basic enum', (t) => {
 
   const MyEnum = makeEnum<MyEnum>()
 
-  type Helper = MyEnum & Record<0 | 1 | 'value', unknown>
+  type Helper = MyEnum & { payload: Record<0 | 1 | 'value', unknown> }
 
   const performCheck = (
     v: Helper,
@@ -21,9 +21,9 @@ test('basic enum', (t) => {
     t.false(Object.getOwnPropertyDescriptor(v, 'case')?.writable)
     t.is(v.case, c)
     t.is(MyEnum[cases][c], c)
-    t.deepEqual(v[0], payload[0])
-    t.deepEqual(v[1], payload[1])
-    t.deepEqual(v.value, payload.value)
+    t.deepEqual(v.payload[0], payload[0])
+    t.deepEqual(v.payload[1], payload[1])
+    t.deepEqual(v.payload.value, payload.value)
   }
 
   const a = MyEnum.a() as Helper
@@ -49,9 +49,10 @@ test('basic property owning', (t) => {
     flags: [boolean, boolean, boolean]
   ): void => {
     t.true('case' in v)
-    t.is('value' in v, flags[0])
-    t.is('0' in v, flags[1])
-    t.is('1' in v, flags[2])
+    const keys = Object.keys(v.payload)
+    t.is(keys.includes('value'), flags[0])
+    t.is(keys.includes('0'), flags[1])
+    t.is(keys.includes('1'), flags[2])
   }
 
   const a = MyEnum.a()
@@ -74,23 +75,25 @@ test('enum with proto', (t) => {
   type MyEnum = MyEnumProto &
     (Case<'a'> | Case<'b', { value: number }> | Case<'c', [string, number]>)
 
-  const MyEnum = makeEnum<MyEnum, MyEnumProto>(() => ({
-    get self(): MyEnum {
-      return this
+  const MyEnum = makeEnum<MyEnum>({
+    proto: {
+      get self(): MyEnum {
+        return this
+      },
+      getNumber() {
+        switch (this.case) {
+          case 'a':
+            return -1
+          case 'b':
+            return this.payload.value
+          case 'c':
+            return this.payload[1] * this.payload[1]
+        }
+      },
     },
-    getNumber() {
-      switch (this.case) {
-        case 'a':
-          return -1
-        case 'b':
-          return this.value
-        case 'c':
-          return this[1] * this[1]
-      }
-    },
-  }))
+  })
 
-  type Helper = MyEnum & Record<0 | 1 | 'value', unknown>
+  type Helper = MyEnum & { payload: Record<0 | 1 | 'value', unknown> }
 
   const performCheck = (
     v: Helper,
@@ -101,9 +104,9 @@ test('enum with proto', (t) => {
     t.false(Object.getOwnPropertyDescriptor(v, 'case')?.writable)
     t.is(v.case, c)
     t.is(MyEnum[cases][c], c)
-    t.deepEqual(v[0], payload[0])
-    t.deepEqual(v[1], payload[1])
-    t.deepEqual(v.value, payload.value)
+    t.deepEqual(v.payload[0], payload[0])
+    t.deepEqual(v.payload[1], payload[1])
+    t.deepEqual(v.payload.value, payload.value)
     t.is(v.self, v)
     t.deepEqual(v.getNumber(), number)
   }
@@ -128,21 +131,23 @@ test('property owning with proto', (t) => {
   type MyEnum = MyEnumProto &
     (Case<'a'> | Case<'b', { value: number }> | Case<'c', [string, number]>)
 
-  const MyEnum = makeEnum<MyEnum, MyEnumProto>(() => ({
-    get self(): MyEnum {
-      return this
+  const MyEnum = makeEnum<MyEnum>({
+    proto: {
+      get self(): MyEnum {
+        return this
+      },
+      getNumber() {
+        switch (this.case) {
+          case 'a':
+            return -1
+          case 'b':
+            return this.payload.value
+          case 'c':
+            return this.payload[1] * this.payload[1]
+        }
+      },
     },
-    getNumber() {
-      switch (this.case) {
-        case 'a':
-          return -1
-        case 'b':
-          return this.value
-        case 'c':
-          return this[1] * this[1]
-      }
-    },
-  }))
+  })
 
   const performCheck = (
     v: MyEnum,
@@ -151,9 +156,10 @@ test('property owning with proto', (t) => {
     t.true('case' in v)
     t.true('self' in v)
     t.true('getNumber' in v)
-    t.is('value' in v, flags[0])
-    t.is('0' in v, flags[1])
-    t.is('1' in v, flags[2])
+    const keys = Object.keys(v.payload)
+    t.is(keys.includes('value'), flags[0])
+    t.is(keys.includes('0'), flags[1])
+    t.is(keys.includes('1'), flags[2])
   }
 
   const a = MyEnum.a()
@@ -180,8 +186,8 @@ test('enum with proto and type', (t) => {
   type MyEnum = MyEnumProto &
     (Case<'a'> | Case<'b', { value: number }> | Case<'c', [string, number]>)
 
-  const MyEnum = makeEnum<MyEnum, MyEnumProto, MyEnumType>(
-    () => ({
+  const MyEnum = makeEnum<MyEnum, MyEnumType>({
+    proto: {
       get self(): MyEnum {
         return this
       },
@@ -190,13 +196,13 @@ test('enum with proto and type', (t) => {
           case 'a':
             return -1
           case 'b':
-            return this.value
+            return this.payload.value
           case 'c':
-            return this[1] * this[1]
+            return this.payload[1] * this.payload[1]
         }
       },
-    }),
-    {
+    },
+    type: {
       make(...args): MyEnum {
         switch (args.length) {
           case 0:
@@ -207,10 +213,10 @@ test('enum with proto and type', (t) => {
             return MyEnum.c([args[1], args[0]])
         }
       },
-    }
-  )
+    },
+  })
 
-  type Helper = MyEnum & Record<0 | 1 | 'value', unknown>
+  type Helper = MyEnum & { payload: Record<0 | 1 | 'value', unknown> }
 
   const performCheck = (
     v: Helper,
@@ -221,9 +227,9 @@ test('enum with proto and type', (t) => {
     t.false(Object.getOwnPropertyDescriptor(v, 'case')?.writable)
     t.is(v.case, c)
     t.is(MyEnum[cases][c], c)
-    t.deepEqual(v[0], payload[0])
-    t.deepEqual(v[1], payload[1])
-    t.deepEqual(v.value, payload.value)
+    t.deepEqual(v.payload[0], payload[0])
+    t.deepEqual(v.payload[1], payload[1])
+    t.deepEqual(v.payload.value, payload.value)
     t.is(v.self, v)
     t.deepEqual(v.getNumber(), number)
   }
@@ -261,8 +267,8 @@ test('property owning with proto and type', (t) => {
   type MyEnum = MyEnumProto &
     (Case<'a'> | Case<'b', { value: number }> | Case<'c', [string, number]>)
 
-  const MyEnum = makeEnum<MyEnum, MyEnumProto, MyEnumType>(
-    () => ({
+  const MyEnum = makeEnum<MyEnum, MyEnumType>({
+    proto: {
       get self(): MyEnum {
         return this
       },
@@ -271,13 +277,13 @@ test('property owning with proto and type', (t) => {
           case 'a':
             return -1
           case 'b':
-            return this.value
+            return this.payload.value
           case 'c':
-            return this[1] * this[1]
+            return this.payload[1] * this.payload[1]
         }
       },
-    }),
-    {
+    },
+    type: {
       make(...args): MyEnum {
         switch (args.length) {
           case 0:
@@ -288,8 +294,8 @@ test('property owning with proto and type', (t) => {
             return MyEnum.c([args[1], args[0]])
         }
       },
-    }
-  )
+    },
+  })
 
   const performCheck = (
     v: MyEnum,
@@ -298,9 +304,10 @@ test('property owning with proto and type', (t) => {
     t.true('case' in v)
     t.true('self' in v)
     t.true('getNumber' in v)
-    t.is('value' in v, flags[0])
-    t.is('0' in v, flags[1])
-    t.is('1' in v, flags[2])
+    const keys = Object.keys(v.payload)
+    t.is(keys.includes('value'), flags[0])
+    t.is(keys.includes('0'), flags[1])
+    t.is(keys.includes('1'), flags[2])
   }
 
   t.true('make' in MyEnum)
@@ -326,19 +333,21 @@ test('enum with type', (t) => {
     | Case<'c', [string, number]>
 
   const MyEnum = makeEnum<MyEnum, MyEnumType>({
-    make(...args): MyEnum {
-      switch (args.length) {
-        case 0:
-          return MyEnum.a()
-        case 1:
-          return MyEnum.b({ value: args[0] })
-        case 2:
-          return MyEnum.c([args[1], args[0]])
-      }
+    type: {
+      make(...args): MyEnum {
+        switch (args.length) {
+          case 0:
+            return MyEnum.a()
+          case 1:
+            return MyEnum.b({ value: args[0] })
+          case 2:
+            return MyEnum.c([args[1], args[0]])
+        }
+      },
     },
   })
 
-  type Helper = MyEnum & Record<0 | 1 | 'value', unknown>
+  type Helper = MyEnum & { payload: Record<0 | 1 | 'value', unknown> }
 
   const performCheck = (
     v: Helper,
@@ -348,9 +357,9 @@ test('enum with type', (t) => {
     t.false(Object.getOwnPropertyDescriptor(v, 'case')?.writable)
     t.is(v.case, c)
     t.is(MyEnum[cases][c], c)
-    t.deepEqual(v[0], payload[0])
-    t.deepEqual(v[1], payload[1])
-    t.deepEqual(v.value, payload.value)
+    t.deepEqual(v.payload[0], payload[0])
+    t.deepEqual(v.payload[1], payload[1])
+    t.deepEqual(v.payload.value, payload.value)
   }
 
   const a = MyEnum.a() as Helper
@@ -383,15 +392,17 @@ test('property owning with type', (t) => {
     | Case<'c', [string, number]>
 
   const MyEnum = makeEnum<MyEnum, MyEnumType>({
-    make(...args): MyEnum {
-      switch (args.length) {
-        case 0:
-          return MyEnum.a()
-        case 1:
-          return MyEnum.b({ value: args[0] })
-        case 2:
-          return MyEnum.c([args[1], args[0]])
-      }
+    type: {
+      make(...args): MyEnum {
+        switch (args.length) {
+          case 0:
+            return MyEnum.a()
+          case 1:
+            return MyEnum.b({ value: args[0] })
+          case 2:
+            return MyEnum.c([args[1], args[0]])
+        }
+      },
     },
   })
 
@@ -400,9 +411,10 @@ test('property owning with type', (t) => {
     flags: [boolean, boolean, boolean]
   ): void => {
     t.true('case' in v)
-    t.is('value' in v, flags[0])
-    t.is('0' in v, flags[1])
-    t.is('1' in v, flags[2])
+    const keys = Object.keys(v.payload)
+    t.is(keys.includes('value'), flags[0])
+    t.is(keys.includes('0'), flags[1])
+    t.is(keys.includes('1'), flags[2])
   }
 
   t.true('make' in MyEnum)
@@ -422,7 +434,7 @@ test('fully optional object payload', (t) => {
 
   const MyEnum = makeEnum<MyEnum>()
 
-  type Helper = MyEnum & Record<'a' | 'b', unknown>
+  type Helper = MyEnum & { payload: Record<'a' | 'b', unknown> }
 
   const performCheck = (
     v: Helper,
@@ -432,11 +444,11 @@ test('fully optional object payload', (t) => {
     t.false(Object.getOwnPropertyDescriptor(v, 'case')?.writable)
     t.is(v.case, c)
     t.is(MyEnum[cases][c], c)
-    t.deepEqual(v.a, payload.a)
-    t.deepEqual(v.b, payload.b)
+    t.deepEqual(v.payload.a, payload.a)
+    t.deepEqual(v.payload.b, payload.b)
   }
 
-  const main = MyEnum.main() as Helper
+  const main = MyEnum.main({}) as Helper
   performCheck(main, 'main', {})
 
   const main_a = MyEnum.main({ a: 42 }) as Helper
