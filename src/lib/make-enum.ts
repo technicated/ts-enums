@@ -1,4 +1,4 @@
-import { cases } from './case'
+import { cases, payload as payloadSymbol } from './case'
 import { unit } from './unit'
 
 export const makeEnum = (args?: { proto?: object; type?: object }): unknown => {
@@ -16,76 +16,26 @@ export const makeEnum = (args?: { proto?: object; type?: object }): unknown => {
       }
 
       return (...args: [unknown?]) => {
-        // const result = Object.setPrototypeOf({}, proto)
-        //
-        // Object.defineProperty(result, 'case', {
-        //   configurable: false,
-        //   enumerable: true,
-        //   value: prop,
-        //   writable: false,
-        // })
-        //
-        // if (args.length) {
-        //   const payload = args[0]
-        //
-        //   Object.defineProperty(result, 'payload', {
-        //     configurable: false,
-        //     enumerable: true,
-        //     value: payload,
-        //     writable: false,
-        //   })
-        //
-        //   switch (typeof payload) {
-        //     case 'bigint':
-        //       Object.defineProperty(result, 'payload', {
-        //         configurable: false,
-        //         enumerable: true,
-        //         value: payload,
-        //         writable: false,
-        //       })
-        //       break
-        //     case 'object':
-        //       if (payload === null) {
-        //         Object.defineProperty(result, 'payload', {
-        //           configurable: false,
-        //           enumerable: true,
-        //           value: null,
-        //           writable: false,
-        //         })
-        //       } else {
-        //         for (const k in payload) {
-        //           Object.defineProperty(result, k, {
-        //             configurable: false,
-        //             enumerable: true,
-        //             get: () => payload[k as keyof typeof payload],
-        //           })
-        //         }
-        //       }
-        //       break
-        //   }
-        // } else {
-        //   Object.defineProperty(result, 'payload', {
-        //     configurable: false,
-        //     enumerable: true,
-        //     value: unit,
-        //     writable: false,
-        //   })
-        // }
-        //
-        // return result
+        const payload = args.length ? args[0] : unit
 
-        return Object.setPrototypeOf(
-          Object.defineProperty(
-            { payload: args.length ? args[0] : unit },
-            'case',
-            {
+        const isObject = typeof payload === 'object' && payload !== null
+
+        return Object.defineProperties(
+          Object.setPrototypeOf(isObject ? { ...payload } : { payload }, proto),
+          {
+            case: {
               configurable: false,
               enumerable: true,
               value: prop,
               writable: false,
-            }
-          ),
-          proto
+            },
+            [payloadSymbol]: {
+              configurable: false,
+              enumerable: true,
+              value: payload,
+              writable: false,
+            },
+          }
         )
       }
     },
