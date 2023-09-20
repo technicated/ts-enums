@@ -1,13 +1,13 @@
-import { cases, Cast } from '../case'
+import { cases, Cast, payload, Payload } from '../case'
 import { Unit } from '../unit'
 
-export type EnumShape = { readonly case: string; readonly payload: unknown }
+export type EnumShape = { readonly case: string; readonly [payload]: unknown }
 
 export type MakeEnumFnArgs<
   Enum extends EnumShape,
   Type extends object = never
 > = Enum & { _: unknown } extends infer _T
-  ? keyof Omit<_T, 'case' | 'payload'> extends '_'
+  ? keyof Omit<_T, 'case' | Payload> extends '_'
     ? [Type] extends [never]
       ? []
       : [{ type: Type }]
@@ -27,9 +27,9 @@ type CasesOfEnum<Enum extends EnumShape> = {
 
 export type EnumCtors<Enum extends EnumShape> = {
   [Case in Enum['case']]: Cast<Enum, Case> extends infer _T extends EnumShape
-    ? _T['payload'] extends Unit
+    ? _T[Payload] extends Unit
       ? () => Enum
-      : (payload: _T['payload']) => Enum
+      : (payload: _T[Payload]) => Enum
     : never
 } & Record<typeof cases, CasesOfEnum<Enum>>
 

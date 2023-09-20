@@ -1,20 +1,35 @@
+/* eslint-disable @typescript-eslint/ban-types */
+
+import { Incr } from './type-arithmetic'
 import { Unit } from './unit'
 
-// type ProcessArrayPayload<
-//   Payload extends unknown[],
-//   Index extends number = 0
-// > = Payload extends [infer H, ...infer T]
-//   ? Record<Index, H> & ProcessArrayPayload<T, Incr<Index>>
-//   : {}
+export const payload: unique symbol = Symbol('Enum payload value')
+export type Payload = typeof payload
 
-// type ProcessPayload<Payload extends object> = Payload extends unknown[]
-//   ? ProcessArrayPayload<Payload>
-//   : Payload
+type ProcessArrayPayload<
+  Payload extends unknown[],
+  Index extends number = 0
+> = Payload extends [infer H, ...infer T]
+  ? Record<Index, H> & ProcessArrayPayload<T, Incr<Index>>
+  : {}
+
+type ProcessPayload<Payload> = Payload extends
+  | bigint
+  | boolean
+  | null
+  | number
+  | string
+  | symbol
+  | undefined
+  ? { payload: Payload }
+  : Payload extends unknown[]
+  ? ProcessArrayPayload<Payload>
+  : Payload
 
 export type Case<Name extends string, Payload = Unit> = {
   readonly case: Name
-  readonly payload: Payload
-}
+  readonly [payload]: Payload
+} & ProcessPayload<Payload>
 
 export const cases: unique symbol = Symbol('Enum cases list')
 
