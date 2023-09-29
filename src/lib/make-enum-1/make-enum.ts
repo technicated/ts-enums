@@ -1,3 +1,16 @@
+import * as base from '../make-enum'
+import { EnumCtors, EnumShape, MakeEnumFnArgs } from './types'
+
+interface MakeEnumFn {
+  <E extends EnumShape>(...args: MakeEnumFnArgs<E>): EnumCtors<E>
+
+  <E extends EnumShape, Type extends object>(
+    ...args: MakeEnumFnArgs<E, Type>
+  ): Type & EnumCtors<E>
+}
+
+export const makeEnum = base.makeEnum as MakeEnumFn
+
 // /* eslint-disable @typescript-eslint/ban-types */
 //
 // import * as base from '../make-enum'

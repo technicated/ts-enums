@@ -1,5 +1,6 @@
-import { cases, Cast, payload, Payload } from '../case'
+import { Case, cases, Cast, payload, Payload } from '../case'
 import { Unit } from '../unit'
+import { makeEnum } from './make-enum'
 
 export type EnumShape = { readonly case: string; readonly [payload]: unknown }
 
@@ -8,29 +9,41 @@ export type MakeEnumFnArgs<
   Type extends object = never
 > = Enum & { _: unknown } extends infer _T
   ? keyof Omit<_T, 'case' | Payload> extends '_'
-    ? [Type] extends [never]
-      ? []
-      : [{ type: Type }]
-    : [Type] extends [never]
-    ? [{ proto: ThisType<Enum> }]
-    : [
-        {
-          proto: ThisType<Enum>
-          type: Type
-        }
-      ]
+  ? [Type] extends [never]
+  ? []
+  : [{ type: Type }]
+  : [Type] extends [never]
+  ? [{ proto: Omit<Enum, 'case' | Payload> & ThisType<Enum> }]
+  : [
+    {
+      proto: ThisType<Enum>
+      type: Type
+    }
+  ]
   : never
+
+interface MyEnumProto {
+  getValue(): string
+}
+
+type MyEnum = MyEnumProto & (Case<'zero', { a: number }> | Case<'a', number> | Case<'b', [number]>)
 
 type CasesOfEnum<Enum extends EnumShape> = {
   [Case in Enum['case']]: Case
 }
 
+makeEnum<MyEnum>({
+  proto: {
+    getValue: () => '',
+  },
+})
+
 export type EnumCtors<Enum extends EnumShape> = {
   [Case in Enum['case']]: Cast<Enum, Case> extends infer _T extends EnumShape
-    ? _T[Payload] extends Unit
-      ? () => Enum
-      : (payload: _T[Payload]) => Enum
-    : never
+  ? _T[Payload] extends Unit
+  ? () => Enum
+  : (payload: _T[Payload]) => Enum
+  : never
 } & Record<typeof cases, CasesOfEnum<Enum>>
 
 export type CasesOf<EnumType> = EnumType extends EnumCtors<infer Enum>
