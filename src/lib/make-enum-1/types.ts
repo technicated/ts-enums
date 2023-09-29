@@ -1,3 +1,105 @@
+import { Case, cases, Cast, Payload } from '../case'
+import { HKT, Kind } from '../hkt'
+import * as types from '../make-enum-0/types'
+import { Unit } from '../unit'
+import { makeEnum } from './make-enum'
+
+export type EnumShape = HKT & { type: types.EnumShape }
+
+export type MakeEnumFnArgs<
+  Enum extends EnumShape,
+  Type extends object = never
+> = Enum['type'] & { _: unknown } extends infer _T
+  ? keyof Omit<_T, 'case' | Payload> extends '_'
+  ? [Type] extends [never]
+  ? []
+  : [{ type: Type }]
+  : [Type] extends [never]
+  ? [{ proto: Omit<Kind<Enum, string>, 'case' | Payload> & ThisType<Kind<Enum, string>> }]
+  : [
+    {
+      proto: Omit<Kind<Enum, string>, 'case' | Payload> & ThisType<Kind<Enum, string>>
+      type: Type
+    }
+  ]
+  : never
+
+type CasesOfEnum<Enum extends EnumShape> = {
+  [Case in Enum['type']['case']]: Case
+}
+
+export type EnumCtors<Enum extends EnumShape> = {
+  [Case in Enum['type']['case']]: Cast<
+    Enum['type'],
+    Case
+  > extends infer _T extends types.EnumShape
+  ? _T[Payload] extends Unit
+  ? <A>() => Kind<Enum, A>
+  : <A>(payload: Cast<Kind<Enum, A>, Case>[Payload]) => Kind<Enum, A>
+  : never
+} & Record<typeof cases, CasesOfEnum<Enum>>
+
+export type CasesOf<EnumType extends EnumShape> = keyof CasesOfEnum<EnumType>
+
+// --------
+
+interface MyEnumProto<T> {
+  getValue(): T
+}
+
+type MyEnum<T> = MyEnumProto<T> & (Case<'zero'> | Case<'a', T> | Case<'b', [T]>)
+
+interface MyEnumHKT extends HKT {
+  readonly type: MyEnum<this['_A']>
+}
+
+interface MyEnumType {
+  make(): number
+}
+
+type _A = MakeEnumFnArgs<MyEnumHKT>
+const asd: _A = [
+  {
+    proto: {
+      getValue() { return 12 },
+    },
+  },
+]
+
+const MyEnum = makeEnum<MyEnumHKT, MyEnumType>({
+  proto: () => ({
+    getValue() { return this.getValue() },
+  }),
+  type: {
+    make: () => {
+      return 12
+    },
+  },
+})
+
+const aaa: ThisType<{ a: number }> = {
+  asd() {
+    return this.a
+  },
+}
+
+type Asd = MakeEnumFnArgs<MyEnumHKT>
+const a: Asd = [
+  {
+    proto: {
+      a: 12,
+    },
+  },
+]
+
+const gg = MyEnum.a(1234)
+
+type Test = EnumCtors<MyEnumHKT>
+const t: Test = undefined as any
+const res = t.b(['12314' as const])
+
+type V = CasesOf<MyEnumHKT>
+
 // import { cases } from '../case'
 // import { HKT, Kind } from '../hkt'
 // import * as types from '../make-enum-0/types'
