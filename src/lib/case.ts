@@ -1,10 +1,10 @@
+import { Unit } from './unit'
+
 export type CaseName<Name extends string> = { readonly case: Name }
 
-export type Case<Name extends string, Payload = never> = [Payload] extends [
-  never
-]
-  ? CaseName<Name>
-  : CaseName<Name> & { readonly p: Payload }
+export type Case<Name extends string, Payload = Unit> = CaseName<Name> & {
+  readonly p: Payload
+}
 
 export const cases: unique symbol = Symbol('ts-enums: Enum cases list')
 

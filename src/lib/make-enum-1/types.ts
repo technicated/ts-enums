@@ -1,53 +1,50 @@
-import { cases } from '../case'
+import { cases, Cast } from '../case'
 import { HKT, Kind } from '../hkt'
-import * as types from '../make-enum-0/types'
-import { Incr } from '../type-arithmetic'
+import { Unit } from '../unit'
 
-export type EnumShape = HKT & { type: types.EnumShape }
-export type ProtoShape = HKT & { type: types.ProtoShape }
+export type EnumShape = HKT & { readonly type: { readonly case: string } }
 
-type RecursiveCtorArgs<
-  Obj extends object,
-  Index extends number = 0
-> = Obj extends Record<Index, infer V>
-  ? [V, ...RecursiveCtorArgs<Omit<Obj, Index>, Incr<Index>>]
-  : []
-
-type EnumCtorArgs<
-  Enum extends EnumShape,
-  Case extends Enum['type']['case'],
-  Proto extends ProtoShape,
-  A
-> = Kind<Enum, A> & { _: unknown; case: Case } extends infer _T
-  ? keyof Omit<_T, 'case' | keyof Kind<Proto, A>> extends keyof { _: unknown }
-    ? []
-    : 0 extends keyof Omit<_T, 'case' | '_' | keyof Kind<Proto, A>>
-    ? [RecursiveCtorArgs<Omit<_T, 'case'>>]
-    : Record<string, never> extends Omit<
-        _T,
-        'case' | '_' | keyof Kind<Proto, A>
-      >
-    ? Partial<[Omit<_T, 'case' | '_' | keyof Kind<Proto, A>>]>
-    : [Omit<_T, 'case' | '_' | keyof Kind<Proto, A>>]
-  : never
-
-type CasesOfEnum<Enum extends EnumShape> = {
-  [Case in Enum['type']['case']]: Case
+type CasesOfEnum<EnumHKT extends EnumShape> = {
+  [Case in EnumHKT['type']['case']]: Case
 }
 
-export type CasesOf<EnumType> = EnumType extends EnumCtors<
-  infer Enum,
-  ProtoShape
->
-  ? keyof CasesOfEnum<Enum>
+type EnumCtorArgs<
+  EnumHKT extends EnumShape,
+  Case extends EnumHKT['type']['case'],
+  A
+> = Cast<Kind<EnumHKT, A>, Case> extends { p: infer Payload }
+  ? Payload extends Unit
+    ? []
+    : [payload: Payload]
   : never
 
-export type EnumCtors<Enum extends EnumShape, Proto extends ProtoShape> = {
-  [Case in Enum['type']['case']]: <A>(
-    ...args: EnumCtorArgs<Enum, Case, Proto, A>
-  ) => Kind<Enum, A>
-} & Record<typeof cases, CasesOfEnum<Enum>>
+export type EnumCtors<EnumHKT extends EnumShape> = {
+  [Case in EnumHKT['type']['case']]: <A>(
+    ...args: EnumCtorArgs<EnumHKT, Case, A>
+  ) => Kind<EnumHKT, A>
+} & Record<typeof cases, CasesOfEnum<EnumHKT>>
 
-export type MakeProtoFn<Enum extends EnumShape, Proto extends ProtoShape> = <A>(
-  e: EnumCtors<Enum, Proto>
-) => Kind<Proto, A> & ThisType<Kind<Enum, A>>
+type MakeProtoFn<EnumHKT extends EnumShape, EnumType extends object> = <A>(
+  Enum: [EnumType] extends [never]
+    ? EnumCtors<EnumHKT>
+    : EnumCtors<EnumHKT> & EnumType
+) => ThisType<Kind<EnumHKT, A>> & Omit<Kind<EnumHKT, A>, 'case' | 'p'>
+
+export type MakeEnumFnArgs<
+  EnumHKT extends EnumShape,
+  EnumType extends object = never
+> = [EnumType] extends [never]
+  ? EnumHKT['type'] & { _: unknown } extends infer _T
+    ? keyof Omit<_T, 'case' | 'p'> extends '_'
+      ? []
+      : [{ makeProto: MakeProtoFn<EnumHKT, EnumType> }]
+    : never
+  : EnumHKT['type'] & { _: unknown } extends infer _T
+  ? keyof Omit<_T, 'case' | 'p'> extends '_'
+    ? [{ type: EnumType }]
+    : [{ makeProto: MakeProtoFn<EnumHKT, EnumType>; type: EnumType }]
+  : never
+
+export type CasesOf<Ctors> = Ctors extends EnumCtors<infer EnumHKT>
+  ? EnumHKT['type']['case']
+  : never

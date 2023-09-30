@@ -1,9 +1,10 @@
 import test, { ExecutionContext } from 'ava'
 import { Case, cases } from '../case'
+import { unit, Unit } from '../unit'
 import { makeEnum } from './make-enum'
 import { CasesOf, EnumCtors, EnumShape } from './types'
 
-type FullPayload = Partial<Record<0 | 1 | 'value', unknown>>
+type FullPayload = Unit | Partial<Record<0 | 1 | 'value', unknown>>
 
 interface MakePerformEqualityCheckFn {
   <Enum extends EnumShape, Args extends unknown[]>(
@@ -11,9 +12,9 @@ interface MakePerformEqualityCheckFn {
     enumCtors: EnumCtors<Enum>,
     extra?: (v: Enum, ...args: Args) => void
   ): (
-    v: Enum & { p?: FullPayload },
-    c: CasesOf<Enum>,
-    payload: FullPayload,
+    v: Enum & { p: FullPayload },
+    c: CasesOf<EnumCtors<Enum>>,
+    payload: Exclude<FullPayload, Unit>,
     ...args: Args
   ) => void
 }
@@ -27,9 +28,12 @@ const makePerformEqualityCheck: MakePerformEqualityCheckFn = (
     t.false(Object.getOwnPropertyDescriptor(v, 'case')?.writable)
     t.is(v.case, c)
     t.is(enumCtors[cases][c], c)
-    t.deepEqual(v.p?.[0], payload[0])
-    t.deepEqual(v.p?.[1], payload[1])
-    t.deepEqual(v.p?.value, payload.value)
+
+    if (v.p !== unit) {
+      t.deepEqual(v.p[0], payload[0])
+      t.deepEqual(v.p[1], payload[1])
+      t.deepEqual(v.p.value, payload.value)
+    }
 
     t.true(!!extra || args.length === 0)
     extra?.(v, ...args)
@@ -41,7 +45,7 @@ interface MakePerformOwnershipCheckFn {
     t: ExecutionContext<unknown>,
     extra?: (v: Enum, ...args: Args) => void
   ): (
-    v: Enum & { p?: FullPayload },
+    v: Enum & { p: FullPayload },
     flags: [boolean, boolean, boolean],
     ...args: Args
   ) => void
@@ -50,9 +54,13 @@ interface MakePerformOwnershipCheckFn {
 const makePerformOwnershipCheck: MakePerformOwnershipCheckFn = (t, extra) => {
   return (v, flags, ...args): void => {
     t.true('case' in v)
-    t.is('value' in (v.p || {}), flags[0])
-    t.is('0' in (v.p || {}), flags[1])
-    t.is('1' in (v.p || {}), flags[2])
+
+    if (v.p !== unit) {
+      t.is('value' in v.p, flags[0])
+      t.is('0' in v.p, flags[1])
+      t.is('1' in v.p, flags[2])
+    }
+
     extra?.(v, ...args)
   }
 }
