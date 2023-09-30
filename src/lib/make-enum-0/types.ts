@@ -34,7 +34,7 @@ export type MakeEnumFnArgs<
     ? [{ type: EnumType }]
     : [
         {
-          makeProto: () => ThisType<Enum> & Omit<_T, 'case' | 'p' | '_'>
+          makeProto: () => ThisType<Enum> & Omit<Enum, 'case'>
           type: EnumType
         }
       ]
