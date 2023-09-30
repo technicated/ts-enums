@@ -1,6 +1,48 @@
-import { cases } from '../case'
-import { Incr } from '../type-arithmetic'
+import { cases, Cast } from '../case'
 
+export type EnumShape = { readonly case: string }
+export type ProtoShape = any // todo: remove
+
+type CasesOfEnum<Enum extends EnumShape> = {
+  [Case in Enum['case']]: Case
+}
+
+type EnumCtorArgs<Enum extends EnumShape, Case extends Enum['case']> = Cast<
+  Enum,
+  Case
+> extends infer _T
+  ? _T extends { p: infer Payload }
+    ? [payload: Payload]
+    : []
+  : never
+
+export type EnumCtors<Enum extends EnumShape> = {
+  [Case in Enum['case']]: (...args: EnumCtorArgs<Enum, Case>) => Enum
+} & Record<typeof cases, CasesOfEnum<Enum>>
+
+export type MakeEnumFnArgs<
+  Enum extends EnumShape,
+  EnumType extends object = never
+> = [EnumType] extends [never]
+  ? Enum & { _: unknown } extends infer _T
+    ? keyof Omit<_T, 'case' | 'p'> extends '_'
+      ? []
+      : [{ makeProto: () => ThisType<Enum> & Omit<Enum, 'case'> }]
+    : never
+  : Enum & { _: unknown } extends infer _T
+  ? keyof Omit<_T, 'case' | 'p'> extends '_'
+    ? [{ type: EnumType }]
+    : [
+        {
+          makeProto: () => ThisType<Enum> & Omit<_T, 'case' | 'p' | '_'>
+          type: EnumType
+        }
+      ]
+  : never
+
+export type CasesOf<Enum extends EnumShape> = Enum['case']
+
+/*
 export type EnumShape = { readonly case: string }
 export type ProtoShape = object
 
@@ -43,3 +85,4 @@ export type EnumCtors<Enum extends EnumShape, Proto extends ProtoShape> = {
 export type MakeProtoFn<Enum extends EnumShape, Proto extends ProtoShape> = (
   e: EnumCtors<Enum, Proto>
 ) => Proto & ThisType<Enum>
+*/
