@@ -404,3 +404,26 @@ test('property owning with type', (t) => {
   const c = MyEnum.c(['hello', 42])
   performCheck(c, [false, true, true])
 })
+
+test('nested enums', (t) => {
+  type Color = Case<'red'> | Case<'green'> | Case<'blue'>
+  const Color = makeEnum<Color>()
+
+  type Wrapper = Case<'none'> | Case<'some', Color>
+  const Wrapper = makeEnum<Wrapper>()
+
+  t.deepEqual(Wrapper.some(Color.red()), {
+    case: 'some',
+    p: { case: 'red', p: unit },
+  })
+
+  t.deepEqual(Wrapper.some(Color.green()), {
+    case: 'some',
+    p: { case: 'green', p: unit },
+  })
+
+  t.deepEqual(Wrapper.some(Color.blue()), {
+    case: 'some',
+    p: { case: 'blue', p: unit },
+  })
+})
