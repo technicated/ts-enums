@@ -185,3 +185,39 @@ test('enum with type', (t) => {
   const make_a = MyEnum.make(1)
   performCheck(make_a, 'a', [1])
 })
+
+test('nested enums', (t) => {
+  type Color<T> =
+    | Case<'red', T>
+    | Case<'green', [T]>
+    | Case<'blue', { value: T }>
+
+  interface ColorHKT extends HKT {
+    readonly type: Color<this['_A']>
+  }
+
+  const Color = makeEnum1<ColorHKT>()
+
+  type Wrapper<T> = Case<'none'> | Case<'some', Color<T>>
+
+  interface WrapperHKT extends HKT {
+    readonly type: Wrapper<this['_A']>
+  }
+
+  const Wrapper = makeEnum1<WrapperHKT>()
+
+  t.deepEqual(Wrapper.some(Color.red(1)), {
+    case: 'some',
+    p: { case: 'red', p: 1 },
+  })
+
+  t.deepEqual(Wrapper.some(Color.green([1])), {
+    case: 'some',
+    p: { case: 'green', p: [1] },
+  })
+
+  t.deepEqual(Wrapper.some(Color.blue({ value: 1 })), {
+    case: 'some',
+    p: { case: 'blue', p: { value: 1 } },
+  })
+})

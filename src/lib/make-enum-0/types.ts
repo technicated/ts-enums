@@ -1,7 +1,7 @@
 import { cases, Cast } from '../case'
 import { Unit } from '../unit'
 
-export type EnumShape = { readonly case: string }
+export type EnumShape = { readonly case: string; readonly p: unknown }
 export type ProtoShape = any // todo: remove
 
 type CasesOfEnum<Enum extends EnumShape> = {
@@ -11,11 +11,9 @@ type CasesOfEnum<Enum extends EnumShape> = {
 type EnumCtorArgs<Enum extends EnumShape, Case extends Enum['case']> = Cast<
   Enum,
   Case
-> extends { p: infer Payload }
-  ? Payload extends Unit
-    ? []
-    : [payload: Payload]
-  : never
+>['p'] extends Unit
+  ? []
+  : [Cast<Enum, Case>['p']]
 
 export type EnumCtors<Enum extends EnumShape> = {
   [Case in Enum['case']]: (...args: EnumCtorArgs<Enum, Case>) => Enum
