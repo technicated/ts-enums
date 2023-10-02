@@ -317,7 +317,7 @@ type Maybe<T> =
   | Case<'some', T>
 
 interface MaybeHKT extends HKT {
-  readonly type Maybe<this['_A']>
+  readonly type: Maybe<this['_A']>
 }
 
 const Maybe = makeEnum1<MaybeHKT>()
@@ -326,3 +326,44 @@ const Maybe = makeEnum1<MaybeHKT>()
 The main differences are the use of the helper function `makeEnum1` instead of `makeEnum`, (there are 7 of them, from `makeEnum` to `makeEnum6`) and the presence of the strange interface `MaybeHKT`.
 
 We won't delve into the nitty-gritty higher-order functional-programming type-algebra details here, the important thing to understand for using this library is that this `HKT` helper and its higher-order versions keep the generic parameters of your enum abstract until you actually instantiate your enum, so that type inference and type completion work correctly. For more information, please refer to [my source for this concept](https://dev.to/effect-ts/encoding-of-hkts-in-typescript-5c3).
+
+By the way, it's only a three-liner, and I hope is not a deal breaker for adopting this library!
+
+Let's continue by implementing the prototype and a static member for our generic enum:
+
+```typescript
+interface MaybeProto<T> {
+  map<U>(transform: (value: T) => U): Maybe<U>
+}
+
+type Maybe<T> = MaybeProto<T> & (
+  | Case<'none'>
+  | Case<'some', T>
+)
+
+interface MaybeHKT extends HKT {
+  readonly type: Maybe<this['_A']>
+}
+
+interface MaybeType {
+  fromValue<T>(value: T): Maybe<NonNullable<T>>
+}
+
+const Maybe = makeEnum1<MaybeHKT>({
+  makeProto: (Maybe) => ({
+    map(transform) {
+      switch (this.case) {
+        case 'none': return Maybe.none()
+        case 'some': return Maybe.some(transform(this.p))
+      }
+    }
+  }),
+  type: {
+    fromValue<T>(value: T): Maybe<NonNullable<T>> {
+      return ((value !== null) && (value !== undefined))
+        ? Maybe.some(value)
+        : Maybe.none()
+    },
+  },
+})
+```
