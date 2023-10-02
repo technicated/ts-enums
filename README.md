@@ -25,7 +25,7 @@ variant Maybe<T> {
   }
 ```
 
-Well, unfortunately this is not possibile today... Maybe this can be introduced in TypeScript and compiled down to something in JavaScript, or it could be proposed as a Ecma feature, but surely it won't land in a couple of days!
+Well, unfortunately this is not possible today... Maybe this can be introduced in TypeScript and compiled down to something in JavaScript, or it could be proposed as a Ecma feature, but surely it won't land in a couple of days!
 
 This library tries to fill this gap, by introducing helper types and functions alongside a set of conventions to effectively use them.
 
@@ -33,7 +33,7 @@ Let's start!
 
 # Enum basics
 
-You can declare an enum by using a typealias (**_convention #1_**) and listing all its cases using the `Case` helper type:
+You can declare an enum by using a type alias (**_convention #1_**) and listing all its cases using the `Case` helper type:
 
 ```typescript
 type Color =
@@ -55,7 +55,7 @@ type Color =
 const Color = makeEnum<Color>()
 ```
 
-The `makeEnum` is generic, and you **must** pass the typealias definition as its first parameter so TypeScript can be able to offer autocompletion for you on `const Color` members.
+The `makeEnum` is generic, and you **must** pass the type alias definition as its first parameter so TypeScript can be able to offer autocompletion for you on `const Color` members.
 
 This is all it takes to create a simple enum! You can now create instances of it by using the case names as constructors:
 
@@ -134,7 +134,7 @@ type Example =
   | Case<'array', Person[]>
 ```
 
-You can access the payload on an instance of your enum using the `p` property. However, doing so outside of an `if` / `switch` / etc will return a value whose type is the union of the types of all the payloads, since TypeScript cannot knonw which case your value is.
+You can access the payload on an instance of your enum using the `p` property. However, doing so outside of an `if` / `switch` / etc will return a value whose type is the union of the types of all the payloads, since TypeScript cannot know which case your value is.
 
 ```typescript
 function makeExample() { ... }
@@ -207,9 +207,11 @@ Animal.cat().makeNoise() // meow!
 Animal.duck().makeNoise() // quack!
 ```
 
-You need to use a function to create the prototype, instead of just specifying it as an object. This is needed for two reasons: the first one has to do with definitive initialization, and this will be explained now, and the second one has to do with generic parameters, which we'll talk about later.
+It is important to note that you need to use a function to create the prototype, instead of just specifying it as a plain object.
 
-You might need to define a method of the prototype using the enum type itself, but doing this will result in TypeScript yelling that `"your enum type implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer"`.
+The reason has to to do with _generic parameters_, which we'll talk about in a subsequent section. In brief, when using generics, you cannot declare the prototype as an object because then you have no generic type(s) to pass to your generic enum type. By using a function instead, the library is able to sneak in the generic argument(s) for you!
+
+However, this brings an issue: if you need to define a method of the prototype using the enum type itself, you will get the TypeScript error `"'your enum type' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer"`.
 
 ```typescript
 interface AnimalProto {
@@ -236,7 +238,9 @@ const Animal = makeEnum<Animal>({
 })
 ```
 
-To solve this, you can receive a copy of the enum you are building as a parameter of the makeProto function, so that you can refer to that symbol instead of the value you are creating. It is **_convention #4_** to call this symbol with the same name of the enum.
+Adding the return type to `makeChild` is trivial in the case of generic-less enums, but when generics are involved you would be missing the generic argument to pass to your generic enum. You can declare your own generic parameter, but the definition of the prototype will be a little bit obscured by all the notation. So, it's better to find another solution.
+
+The solution is that you can receive a copy of the enum you are building as a parameter of the `makeProto` function, so that you can refer to that symbol instead of the value you are creating. It is **_convention #4_** to call this symbol with the same name of the enum.
 
 ```typescript
 interface AnimalProto {
@@ -264,11 +268,13 @@ const Animal = makeEnum<Animal>({
 })
 ```
 
-This is a little unfortunate, but is a very small price to pay to make TypeScript happy.
+This is a little unfortunate, but is a very small price to pay to make everything work.
+
+Finally, there is **_convention #5_**: you should omit the parameters and return types of the prototype methods from its implementation. TypeScript will infer these for you, and you'll be immediately warned if something is wrong should you change your enum definition!
 
 # Adding static methods
 
-When you need to add static methods or properties to your enum, you also need to peform two steps, similar to how you add a prototype. First step: declare an interface with name `<MyEnumName>Type` (**_convention #5_**) containing all the desired methods / properties; step two: pass this interface as the second generic parameter to `makeEnum` and implement it using the first parameter of the function:
+When you need to add static methods or properties to your enum, you also need to perform two steps, similar to how you add a prototype. First step: declare an interface with name `<MyEnumName>Type` (**_convention #6_**) containing all the desired methods / properties; step two: pass this interface as the second generic parameter to `makeEnum` and implement it using the first parameter of the function:
 
 ```typescript
 type Color =
@@ -281,8 +287,8 @@ interface ColorType {
 }
 
 const Color = makeEnum<Color, ColorType>({
-  makeType: (Color) => ({
-    random() {
+  type:  {
+    random(): Color {
       if (Math.random() > 0.3) {
         return Color.red() // we prefer red!
       }
@@ -291,12 +297,12 @@ const Color = makeEnum<Color, ColorType>({
         ? Color.green()
         : Color.blue()
     }
-  })
+  }
 })
 ```
 
-This has the same mini-issue of the prototype declaration: if you need to refer to your enum inside of the type methods, you must receive it as a parameter of the `makeType` function in order to avoid the `"'your enum' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer."` error. For more details, see the [section about adding the prototype](#adding-a-prototype).
+Defining the type has not the same mini-issue of the [prototype declaration](#adding-a-prototype): you can directly refer to the enum type in the methods definition, so TypeScript can correctly reason about your types.
 
 # Introducing generics
 
-The most powerful abstractions come from generics, and luckily TypeScript has them! However, to correctly integrate generics with `ts-enums`, you need to do an extra step to help the comiler digest and "pass down" the information about the generic types.
+The most powerful abstractions come from generics, and luckily TypeScript has them! However, to correctly integrate generics with `ts-enums`, you need to do an extra step to help the compiler digest and "pass down" the information about the generic types.
