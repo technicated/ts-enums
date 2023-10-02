@@ -1,7 +1,7 @@
 import test, { ExecutionContext } from 'ava'
 import { Case, cases } from '../case'
 import { HKT } from '../hkt'
-import { Unit, unit } from '../unit'
+import { unit, Unit } from '../unit'
 import { makeEnum1 } from './make-enum'
 import { CasesOf, EnumCtors, EnumShape } from './types'
 
@@ -217,4 +217,41 @@ test('nested enums', (t) => {
     case: 'some',
     p: { case: 'blue', p: { a: 1 } },
   })
+})
+
+test('weird generics', (t) => {
+  interface MaybeProto<T> {
+    map<U>(transform: (value: T) => U): Maybe<U>
+  }
+
+  type Maybe<T> = MaybeProto<T> & (Case<'none'> | Case<'some', T>)
+
+  interface MaybeHKT extends HKT {
+    readonly type: Maybe<this['_A']>
+  }
+
+  interface MaybeType {
+    fromValue<T>(value: T): Maybe<NonNullable<T>>
+  }
+
+  const Maybe = makeEnum1<MaybeHKT, MaybeType>({
+    makeProto: (Maybe) => ({
+      map(transform) {
+        switch (this.case) {
+          case 'none':
+            return Maybe.none()
+          case 'some':
+            return Maybe.some(transform(this.p))
+        }
+      },
+    }),
+    type: {
+      fromValue<T>(value: T): Maybe<NonNullable<T>> {
+        return value ? Maybe.some(value) : Maybe.none()
+      },
+    },
+  })
+
+  t.like(Maybe.none(), { case: 'none', p: unit })
+  t.like(Maybe.some(42), { case: 'some', p: 42 })
 })
