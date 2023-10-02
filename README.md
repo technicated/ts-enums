@@ -163,7 +163,113 @@ switch (e.case) {
     break
   case 'array':
     // `e.p` is of type `Person[]`
-    console.log('persons names are', e.p.map(({ name }) => name).joined(', '))
+    console.log('people names are', e.p.map(({ name }) => name).joined(', '))
     break
 }
 ```
+
+# Adding a prototype
+
+You might want to add methods to your enum, like you do on your objects. To do this, you perform two steps: first, you declare an interface to shape your prototype, and you call this interface `<MyEnumName>Proto` (**_convention #3_**), then you add this interface to the main type declaration and implement it using the first parameter of the `makeEnum` helper function:
+
+```typescript
+interface AnimalProto {
+  makeNoise(): void  
+}
+
+type Animal = AnimalProto & (
+  | Case<'dog'>
+  | Case<'cat'>
+  | Case<'duck'>
+)
+
+const Animal = makeEnum<Animal>({
+  makeProto: () => ({
+    // implement this method as a traditional function and not as an arrow function, so `this` will be bound to the instance of `Animal` on which this method is called
+    makeNoise() {
+      switch (this.case) {
+        case 'dog':
+          console.log('bark!')
+          break
+        case 'cat':
+          console.log('meow!')
+          break
+        case 'duck':
+          console.log('quack!')
+          break
+      }
+    },
+  }),
+})
+
+Animal.dog().makeNoise() // bark!
+Animal.cat().makeNoise() // meow!
+Animal.duck().makeNoise() // quack!
+```
+
+You need to use a function to create the prototype, instead of just specifying it as an object. This is needed for two reasons: the first one has to do with definitive initialization, and this will be explained now, and the second one has to do with generic parameters, which we'll talk about later.
+
+You might need to define a method of the prototype using the enum type itself, but doing this will result in TypeScript yelling that "your enum typeimplicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer".
+
+```typescript
+interface AnimalProto {
+  makeChild(): Animal
+}
+
+type Animal = AnimalProto & (
+  | Case<'dog'>
+  | Case<'cat'>
+  | Case<'duck'>
+)
+
+// 'Animal' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer
+const Animal = makeEnum<Animal>({
+  makeProto: () => ({
+    makeChild: () => ({
+      switch (this.case) {
+        case 'dog': return Animal.dog()
+        case 'cat': return Animal.cat()
+        case 'duck': return Animal.duck()
+      }
+    },
+  })
+})
+```
+
+To solve this, you can receive a copy of the enum you are building as a parameter of the makeProto function, so that you can refer to that symbol instead of the value you are creating. It is **_convention #4_** to call this symbol with the same name of the enum.
+
+```typescript
+interface AnimalProto {
+  makeChild(): Animal
+}
+
+type Animal = AnimalProto & (
+  | Case<'dog'>
+  | Case<'cat'>
+  | Case<'duck'>
+)
+
+const Animal = makeEnum<Animal>({
+  //          v here's the difference
+  makeProto: (Animal) => ({
+    makeChild() {
+      // inside here, `Animal` now refers to the parameter of `makeProto` instead of the global `Animal` const
+      switch (this.case) {
+        case 'dog': return Animal.dog()
+        case 'cat': return Animal.cat()
+        case 'duck': return Animal.duck()
+      }
+    },
+  }),
+})
+```
+
+This is a little unfortunate, but is a very small price to pay to make TypeScript happy.
+
+# Adding static methods
+
+todo
+
+# Introducing generics
+
+The most powerful abstractions come from generics, and luckily TypeScript has them! However, to correctly integrate generics with `ts-enums`, you need to do an extra step to help the comiler digest and "pass down" the information about the generic types.
