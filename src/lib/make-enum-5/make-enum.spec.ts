@@ -383,3 +383,61 @@ test('enum with type', (t) => {
   const make_e = MyEnum.make('hello', 3, 'world', false, 'foo')
   performCheck(make_e, 'e', ['hello', 3, 'world', false, 'foo'])
 })
+
+test('nested enums', (t) => {
+  type Color<A, B, C, D, E> =
+    | Case<'red', A | B | C | D | E>
+    | Case<'green', [A, B, C, D, E]>
+    | Case<'blue', { a: A; b: B; c: C; d: D; e: E }>
+
+  interface ColorHKT extends HKT5 {
+    readonly type: Color<
+      this['_A'],
+      this['_B'],
+      this['_C'],
+      this['_D'],
+      this['_E']
+    >
+  }
+
+  const Color = makeEnum5<ColorHKT>()
+
+  type Wrapper<A, B, C, D, E> =
+    | Case<'none'>
+    | Case<'some', Color<A, B, C, D, E>>
+
+  interface WrapperHKT extends HKT5 {
+    readonly type: Wrapper<
+      this['_A'],
+      this['_B'],
+      this['_C'],
+      this['_D'],
+      this['_E']
+    >
+  }
+
+  const Wrapper = makeEnum5<WrapperHKT>()
+
+  t.deepEqual(Wrapper.some(Color.red(1)), {
+    case: 'some',
+    p: { case: 'red', p: 1 },
+  })
+
+  t.deepEqual(Wrapper.some(Color.green([1, 2, 3, 4, 5])), {
+    case: 'some',
+    p: { case: 'green', p: [1, 2, 3, 4, 5] },
+  })
+
+  t.deepEqual(
+    Wrapper.some(
+      Color.blue({ a: 'hello', b: 3, c: 'world', d: true, e: 'foo' })
+    ),
+    {
+      case: 'some',
+      p: {
+        case: 'blue',
+        p: { a: 'hello', b: 3, c: 'world', d: true, e: 'foo' },
+      },
+    }
+  )
+})
