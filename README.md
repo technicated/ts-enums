@@ -301,8 +301,28 @@ const Color = makeEnum<Color, ColorType>({
 })
 ```
 
-Defining the type has not the same mini-issue of the [prototype declaration](#adding-a-prototype): you can directly refer to the enum type in the methods definition, so TypeScript can correctly reason about your types.
+Defining the type has not the same mini-issue of the [prototype declaration](#adding-a-prototype): you can directly refer to the enum type in the methods definition, so TypeScript can correctly reason about your types. This is true even for generic enums, since for static methods you are forced to specify the generic parameters (this is true even for "regular" classes).
 
 # Introducing generics
 
 The most powerful abstractions come from generics, and luckily TypeScript has them! However, to correctly integrate generics with `ts-enums`, you need to do an extra step to help the compiler digest and "pass down" the information about the generic types.
+
+All the examples will use a generic enum with one generic parameter, but this library supports up to six of them.
+
+Let's translate the original `Maybe` example from the invented `variant` syntax to this library's syntax. First the code, then the explanation - and for now we omit the prototype and the static methods.
+
+```typescript
+type Maybe<T> =
+  | Case<'none'>
+  | Case<'some', T>
+
+interface MaybeHKT extends HKT {
+  readonly type Maybe<this['_A']>
+}
+
+const Maybe = makeEnum1<MaybeHKT>()
+```
+
+The main differences are the use of the helper function `makeEnum1` instead of `makeEnum`, (there are 7 of them, from `makeEnum` to `makeEnum6`) and the presence of the strange interface `MaybeHKT`.
+
+We won't delve into the nitty-gritty higher-order functional-programming type-algebra details here, the important thing to understand for using this library is that this `HKT` helper and its higher-order versions keep the generic parameters of your enum abstract until you actually instantiate your enum, so that type inference and type completion work correctly. For more information, please refer to [my source for this concept](https://dev.to/effect-ts/encoding-of-hkts-in-typescript-5c3).
