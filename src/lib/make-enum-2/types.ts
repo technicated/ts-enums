@@ -13,13 +13,18 @@ type EnumCtorArgs<
   Case extends EnumHKT['type']['case'],
   A,
   B
-> = Cast<Kind2<EnumHKT, A, B>, Case>['p'] extends Unit
+> =
+  /*Cast<Kind2<EnumHKT, A, B>, Case>['p'] extends Unit
   ? []
-  : [Cast<Kind2<EnumHKT, A, B>, Case>['p']]
+  : [Cast<Kind2<EnumHKT, A, B>, Case>['p']]*/
+  [Cast<Kind2<EnumHKT, A, B>, Case>['p']]
 
 export type EnumCtors<EnumHKT extends EnumShape> = {
   [Case in EnumHKT['type']['case']]: <A, B>(
-    ...args: EnumCtorArgs<EnumHKT, Case, A, B>
+    // ...args: EnumCtorArgs<EnumHKT, Case, A, B>
+    ...args: Cast<Kind2<EnumHKT, A, B>, Case>['p'] extends Unit
+      ? Partial<EnumCtorArgs<EnumHKT, Case, A, B>>
+      : EnumCtorArgs<EnumHKT, Case, A, B>
   ) => Kind2<EnumHKT, A, B>
 } & Record<typeof cases, CasesOfEnum<EnumHKT>>
 
