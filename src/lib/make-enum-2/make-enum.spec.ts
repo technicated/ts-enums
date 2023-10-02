@@ -88,22 +88,6 @@ test('enum with proto', (t) => {
     }),
   })
 
-  // type Helper = MyEnum<unknown, unknown> & Record<0 | 1, unknown>
-
-  // const performCheck = (
-  //   v: Helper,
-  //   c: CasesOf<typeof MyEnum>,
-  //   payload: Partial<[unknown, unknown]>,
-  //   prev: unknown
-  // ): void => {
-  //   t.false(Object.getOwnPropertyDescriptor(v, 'case')?.writable)
-  //   t.is(v.case, c)
-  //   t.is(MyEnum[cases][c], c)
-  //   t.deepEqual(v[0], payload[0])
-  //   t.deepEqual(v[1], payload[1])
-  //   t.deepEqual(v.prev(), prev)
-  // }
-
   const performCheck = makePerformEqualityCheck(t, MyEnum, (v, prev) => {
     t.deepEqual(v.prev(), prev)
   })
