@@ -1,10 +1,8 @@
-import { cases, Cast } from '../case'
+import { EnumShape as BaseEnumShape, cases, Cast } from '../case'
 import { HKT, Kind } from '../hkt'
 import { Unit } from '../unit'
 
-export type EnumShape = HKT & {
-  readonly type: { readonly case: string; readonly p: unknown }
-}
+export type EnumShape = HKT & { readonly type: BaseEnumShape }
 
 type CasesOfEnum<EnumHKT extends EnumShape> = {
   [Case in EnumHKT['type']['case']]: Case

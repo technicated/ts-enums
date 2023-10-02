@@ -1,8 +1,7 @@
-import { cases, Cast } from '../case'
+import { EnumShape as BaseEnumShape, cases, Cast } from '../case'
 import { Unit } from '../unit'
 
-export type EnumShape = { readonly case: string; readonly p: unknown }
-export type ProtoShape = any // todo: remove
+export type EnumShape = BaseEnumShape
 
 type CasesOfEnum<Enum extends EnumShape> = {
   [Case in Enum['case']]: Case

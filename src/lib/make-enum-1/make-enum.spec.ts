@@ -187,10 +187,7 @@ test('enum with type', (t) => {
 })
 
 test('nested enums', (t) => {
-  type Color<T> =
-    | Case<'red', T>
-    | Case<'green', [T]>
-    | Case<'blue', { value: T }>
+  type Color<A> = Case<'red', A> | Case<'green', [A]> | Case<'blue', { a: A }>
 
   interface ColorHKT extends HKT {
     readonly type: Color<this['_A']>
@@ -198,7 +195,7 @@ test('nested enums', (t) => {
 
   const Color = makeEnum1<ColorHKT>()
 
-  type Wrapper<T> = Case<'none'> | Case<'some', Color<T>>
+  type Wrapper<A> = Case<'none'> | Case<'some', Color<A>>
 
   interface WrapperHKT extends HKT {
     readonly type: Wrapper<this['_A']>
@@ -216,8 +213,8 @@ test('nested enums', (t) => {
     p: { case: 'green', p: [1] },
   })
 
-  t.deepEqual(Wrapper.some(Color.blue({ value: 1 })), {
+  t.deepEqual(Wrapper.some(Color.blue({ a: 1 })), {
     case: 'some',
-    p: { case: 'blue', p: { value: 1 } },
+    p: { case: 'blue', p: { a: 1 } },
   })
 })

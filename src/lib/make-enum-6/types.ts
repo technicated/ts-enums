@@ -1,8 +1,8 @@
-import { cases, Cast } from '../case'
+import { EnumShape as BaseEnumShape, cases, Cast } from '../case'
 import { HKT6, Kind6 } from '../hkt'
 import { Unit } from '../unit'
 
-export type EnumShape = HKT6 & { readonly type: { readonly case: string } }
+export type EnumShape = HKT6 & { readonly type: BaseEnumShape }
 
 type CasesOfEnum<EnumHKT extends EnumShape> = {
   [Case in EnumHKT['type']['case']]: Case
@@ -17,11 +17,9 @@ type EnumCtorArgs<
   D,
   E,
   F
-> = Cast<Kind6<EnumHKT, A, B, C, D, E, F>, Case> extends { p: infer Payload }
-  ? Payload extends Unit
-    ? []
-    : [payload: Payload]
-  : never
+> = Cast<Kind6<EnumHKT, A, B, C, D, E, F>, Case>['p'] extends Unit
+  ? []
+  : [Cast<Kind6<EnumHKT, A, B, C, D, E, F>, Case>['p']]
 
 export type EnumCtors<EnumHKT extends EnumShape> = {
   [Case in EnumHKT['type']['case']]: <A, B, C, D, E, F>(
