@@ -209,7 +209,7 @@ Animal.duck().makeNoise() // quack!
 
 You need to use a function to create the prototype, instead of just specifying it as an object. This is needed for two reasons: the first one has to do with definitive initialization, and this will be explained now, and the second one has to do with generic parameters, which we'll talk about later.
 
-You might need to define a method of the prototype using the enum type itself, but doing this will result in TypeScript yelling that "your enum typeimplicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer".
+You might need to define a method of the prototype using the enum type itself, but doing this will result in TypeScript yelling that `"your enum type implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer"`.
 
 ```typescript
 interface AnimalProto {
@@ -268,7 +268,34 @@ This is a little unfortunate, but is a very small price to pay to make TypeScrip
 
 # Adding static methods
 
-todo
+When you need to add static methods or properties to your enum, you also need to peform two steps, similar to how you add a prototype. First step: declare an interface with name `<MyEnumName>Type` (**_convention #5_**) containing all the desired methods / properties; step two: pass this interface as the second generic parameter to `makeEnum` and implement it using the first parameter of the function:
+
+```typescript
+type Color =
+  | Case<'red'>
+  | Case<'green'>
+  | Case<'blue'>
+
+interface ColorType {
+  random(): Color
+}
+
+const Color = makeEnum<Color, ColorType>({
+  makeType: (Color) => ({
+    random() {
+      if (Math.random() > 0.3) {
+        return Color.red() // we prefer red!
+      }
+
+      return Math.random() < 0.5
+        ? Color.green()
+        : Color.blue()
+    }
+  })
+})
+```
+
+This has the same mini-issue of the prototype declaration: if you need to refer to your enum inside of the type methods, you must receive it as a parameter of the `makeType` function in order to avoid the `"'your enum' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer."` error. For more details, see the [section about adding the prototype](#adding-a-prototype).
 
 # Introducing generics
 
