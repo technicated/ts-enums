@@ -285,3 +285,60 @@ test('nested enums', (t) => {
     p: { case: 'blue', p: { a: 'hello', b: 3, c: 'world' } },
   })
 })
+
+test('weird generics', (t) => {
+  interface MaybeProto<A, B, C> {
+    map<X, Y, Z>(
+      tx_a: (value: A) => X,
+      tx_b: (value: B) => Y,
+      tx_c: (value: C) => Z
+    ): Maybe<X, Y, Z>
+  }
+
+  type Maybe<A, B, C> = MaybeProto<A, B, C> &
+    (Case<'none'> | Case<'someA', A> | Case<'someB', B> | Case<'someC', C>)
+
+  interface MaybeHKT extends HKT3 {
+    readonly type: Maybe<this['_A'], this['_B'], this['_C']>
+  }
+
+  interface MaybeType {
+    fromValues<A, B, C>(
+      values?: { a: A } | { b: B } | { c: C }
+    ): Maybe<NonNullable<A>, NonNullable<B>, NonNullable<C>>
+  }
+
+  const Maybe = makeEnum3<MaybeHKT, MaybeType>({
+    makeProto: (Maybe) => ({
+      map(tx_a, tx_b, tx_c) {
+        switch (this.case) {
+          case 'none':
+            return Maybe.none()
+          case 'someA':
+            return Maybe.someA(tx_a(this.p))
+          case 'someB':
+            return Maybe.someB(tx_b(this.p))
+          case 'someC':
+            return Maybe.someC(tx_c(this.p))
+        }
+      },
+    }),
+    type: {
+      fromValues<A, B, C>(values?: {
+        a?: A
+        b?: B
+        c?: C
+      }): Maybe<NonNullable<A>, NonNullable<B>, NonNullable<C>> {
+        if (values?.a) return Maybe.someA(values.a)
+        if (values?.b) return Maybe.someB(values.b)
+        if (values?.c) return Maybe.someC(values.c)
+        return Maybe.none()
+      },
+    },
+  })
+
+  t.like(Maybe.fromValues(), { case: 'none', p: unit })
+  t.like(Maybe.fromValues({ a: 42 }), { case: 'someA', p: 42 })
+  t.like(Maybe.fromValues({ b: 'hello' }), { case: 'someB', p: 'hello' })
+  t.like(Maybe.fromValues({ c: 'world' }), { case: 'someC', p: 'world' })
+})

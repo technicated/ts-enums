@@ -8,6 +8,7 @@ type CasesOfEnum<EnumHKT extends EnumShape> = {
   [Case in EnumHKT['type']['case']]: Case
 }
 
+// this has to be a separated type or `EnumCtors` will not work!
 type EnumCtorArgs<
   EnumHKT extends EnumShape,
   Case extends EnumHKT['type']['case'],
@@ -16,13 +17,15 @@ type EnumCtorArgs<
   C,
   D,
   E
-> = Cast<Kind5<EnumHKT, A, B, C, D, E>, Case>['p'] extends Unit
-  ? []
-  : [Cast<Kind5<EnumHKT, A, B, C, D, E>, Case>['p']]
+> = [Cast<Kind5<EnumHKT, A, B, C, D, E>, Case>['p']]
 
 export type EnumCtors<EnumHKT extends EnumShape> = {
   [Case in EnumHKT['type']['case']]: <A, B, C, D, E>(
-    ...args: EnumCtorArgs<EnumHKT, Case, A, B, C, D, E>
+    // this has to be this weird check in order for TS to not complain in some edge cases
+    //  like the presence of `NonNullable<*>`
+    ...args: Cast<Kind5<EnumHKT, A, B, C, D, E>, Case>['p'] extends Unit
+      ? Partial<EnumCtorArgs<EnumHKT, Case, A, B, C, D, E>>
+      : EnumCtorArgs<EnumHKT, Case, A, B, C, D, E>
   ) => Kind5<EnumHKT, A, B, C, D, E>
 } & Record<typeof cases, CasesOfEnum<EnumHKT>>
 
