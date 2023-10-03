@@ -37,7 +37,8 @@
     "version": "standard-version",
     "reset-hard": "git clean -dfx && git reset --hard && npm i",
     "prepare-release": "run-s reset-hard test cov:check doc:html version doc:publish",
-    "prepare": "run-s build"
+    "prepare": "run-s build",
+    "gen-template": "ts-node template.ts"
   },
   "engines": {
     "node": ">=10"
@@ -45,6 +46,7 @@
   "devDependencies": {
     "@ava/typescript": "^1.1.1",
     "@istanbuljs/nyc-config-typescript": "^1.0.1",
+    "@types/node": "^20.8.2",
     "@typescript-eslint/eslint-plugin": "^4.7",
     "@typescript-eslint/parser": "^4.7",
     "ava": "^3.12.1",
