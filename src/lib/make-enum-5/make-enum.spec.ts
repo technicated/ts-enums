@@ -441,3 +441,97 @@ test('nested enums', (t) => {
     }
   )
 })
+
+test('weird generics', (t) => {
+  interface MaybeProto<A, B, C, D, E> {
+    map<V, W, X, Y, Z>(
+      tx_a: (value: A) => V,
+      tx_b: (value: B) => W,
+      tx_c: (value: C) => X,
+      tx_d: (value: D) => Y,
+      tx_e: (value: E) => Z
+    ): Maybe<V, W, X, Y, Z>
+  }
+
+  type Maybe<A, B, C, D, E> = MaybeProto<A, B, C, D, E> &
+    (
+      | Case<'none'>
+      | Case<'someA', A>
+      | Case<'someB', B>
+      | Case<'someC', C>
+      | Case<'someD', D>
+      | Case<'someE', E>
+    )
+
+  interface MaybeHKT extends HKT5 {
+    readonly type: Maybe<
+      this['_A'],
+      this['_B'],
+      this['_C'],
+      this['_D'],
+      this['_E']
+    >
+  }
+
+  interface MaybeType {
+    fromValues<A, B, C, D, E>(
+      values?: { a: A } | { b: B } | { c: C } | { d: D } | { e: E }
+    ): Maybe<
+      NonNullable<A>,
+      NonNullable<B>,
+      NonNullable<C>,
+      NonNullable<D>,
+      NonNullable<E>
+    >
+  }
+
+  const Maybe = makeEnum5<MaybeHKT, MaybeType>({
+    makeProto: (Maybe) => ({
+      map(tx_a, tx_b, tx_c, tx_d, tx_e) {
+        switch (this.case) {
+          case 'none':
+            return Maybe.none()
+          case 'someA':
+            return Maybe.someA(tx_a(this.p))
+          case 'someB':
+            return Maybe.someB(tx_b(this.p))
+          case 'someC':
+            return Maybe.someC(tx_c(this.p))
+          case 'someD':
+            return Maybe.someD(tx_d(this.p))
+          case 'someE':
+            return Maybe.someE(tx_e(this.p))
+        }
+      },
+    }),
+    type: {
+      fromValues<A, B, C, D, E>(values?: {
+        a?: A
+        b?: B
+        c?: C
+        d?: D
+        e?: E
+      }): Maybe<
+        NonNullable<A>,
+        NonNullable<B>,
+        NonNullable<C>,
+        NonNullable<D>,
+        NonNullable<E>
+      > {
+        if (values?.a) return Maybe.someA(values.a)
+        if (values?.b) return Maybe.someB(values.b)
+        if (values?.c) return Maybe.someC(values.c)
+        if (values?.d) return Maybe.someD(values.d)
+        if (values?.e) return Maybe.someE(values.e)
+        return Maybe.none()
+      },
+    },
+  })
+
+  t.like(Maybe.fromValues(), { case: 'none', p: unit })
+  t.like(Maybe.fromValues({ a: 'hello' }), { case: 'someA', p: 'hello' })
+  t.like(Maybe.fromValues({ b: 3 }), { case: 'someB', p: 3 })
+  t.like(Maybe.fromValues({ c: 'world' }), { case: 'someC', p: 'world' })
+  t.like(Maybe.fromValues({ d: true }), { case: 'someD', p: true })
+  t.like(Maybe.fromValues({ e: 'foo' }), { case: 'someE', p: 'foo' })
+})

@@ -8,25 +8,21 @@ type CasesOfEnum<EnumHKT extends EnumShape> = {
   [Case in EnumHKT['type']['case']]: Case
 }
 
-export type EnumCtorArgs<
+// this has to be a separated type or `EnumCtors` will not work!
+type EnumCtorArgs<
   EnumHKT extends EnumShape,
   Case extends EnumHKT['type']['case'],
   A
-> =
-  /*(Cast<Kind<EnumHKT, A>, Case>['p'] extends Unit
-  ? []
-  : [Cast<Kind<EnumHKT, A>, Case>['p']]) extends infer V extends unknown[] ? V : never*/
-  [Cast<Kind<EnumHKT, A>, Case>['p']]
+> = [Cast<Kind<EnumHKT, A>, Case>['p']]
 
 export type EnumCtors<EnumHKT extends EnumShape> = {
   [Case in EnumHKT['type']['case']]: <A>(
+    // this has to be this weird check in order for TS to not complain in some edge cases
+    //  like the presence of `NonNullable<*>`
     ...args: Cast<Kind<EnumHKT, A>, Case>['p'] extends Unit
       ? Partial<EnumCtorArgs<EnumHKT, Case, A>>
       : EnumCtorArgs<EnumHKT, Case, A>
-  ) => // ...args: Cast<Kind<EnumHKT, A>, Case>['p'] extends Unit
-  //   ? Partial<[Cast<Kind<EnumHKT, A>, Case>['p']]>
-  //   : [Cast<Kind<EnumHKT, A>, Case>['p']]
-  Kind<EnumHKT, A>
+  ) => Kind<EnumHKT, A>
 } & Record<typeof cases, CasesOfEnum<EnumHKT>>
 
 type MakeProtoFn<EnumHKT extends EnumShape, EnumType extends object> = <A>(
