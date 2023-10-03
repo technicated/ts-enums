@@ -7,15 +7,18 @@ type CasesOfEnum<Enum extends EnumShape> = {
   [Case in Enum['case']]: Case
 }
 
-type EnumCtorArgs<Enum extends EnumShape, Case extends Enum['case']> = Cast<
-  Enum,
-  Case
->['p'] extends Unit
-  ? []
-  : [Cast<Enum, Case>['p']]
+// this is like this for consistency with generic variants
+type EnumCtorArgs<Enum extends EnumShape, Case extends Enum['case']> = [
+  Cast<Enum, Case>['p']
+]
 
 export type EnumCtors<Enum extends EnumShape> = {
-  [Case in Enum['case']]: (...args: EnumCtorArgs<Enum, Case>) => Enum
+  [Case in Enum['case']]: (
+    // this is like this for consistency with generic variants
+    ...args: Cast<Enum, Case>['p'] extends Unit
+      ? Partial<EnumCtorArgs<Enum, Case>>
+      : EnumCtorArgs<Enum, Case>
+  ) => Enum
 } & Record<typeof cases, CasesOfEnum<Enum>>
 
 type MakeProtoFn<Enum extends EnumShape> = () => ThisType<Enum> &
