@@ -1,6 +1,6 @@
-import fs from 'fs';
+import fs from 'fs'
 
-function generateArityFile(arity: number): void {
+function generateTypesFile(arity: number): void {
   if (arity < 0) {
     throw new Error('Bad arity < 0')
   }
@@ -20,9 +20,6 @@ function generateArityFile(arity: number): void {
     kind: isGeneric ? `Kind${n}${genericClause('EnumHKT')}` : 'Enum',
     subject: isGeneric ? `EnumHKT['type']` : 'Enum',
   }
-
-  var _ = `${Enum}`
-  _ = _
 
   const template = `import { EnumShape as BaseEnumShape, cases, Cast } from '../case'
 ${isGeneric ? `import { HKT${n}, Kind${n} } from '../hkt'` : ''}
@@ -77,8 +74,30 @@ export type CasesOf<Ctors> = Ctors extends EnumCtors<infer ${Enum}>
   ? ${Enum.case}
   : never
 `
-  const fileName = `src/lib/subdir/arity_${arity}.ts`;
-  fs.writeFileSync(fileName, template);
+
+  const fileName = `src/lib/subdir/make-enum-${arity}/types.ts`
+  fs.writeFileSync(fileName, template)
+}
+
+function generateMakeEnumFile(arity: number): void {
+  if (arity < 0) {
+    throw new Error('Bad arity < 0')
+  }
+
+  const template = `import * as base from '../make-enum'
+import { EnumCtors, EnumShape, MakeEnumFnArgs } from './types'
+
+interface MakeEnumFn {
+  <Enum extends EnumShape, EnumType extends object = never>(
+    ...args: MakeEnumFnArgs<Enum, EnumType>
+  ): [EnumType] extends [never] ? EnumCtors<Enum> : EnumType & EnumCtors<Enum>
+}
+
+export const makeEnum${arity === 0 ? '' : arity} = base.makeEnum as MakeEnumFn
+`
+
+  const fileName = `src/lib/subdir/make-enum-${arity}/make-enum.ts`
+  fs.writeFileSync(fileName, template)
 }
 
 if (!fs.existsSync('src/lib/subdir')) {
@@ -86,7 +105,12 @@ if (!fs.existsSync('src/lib/subdir')) {
 }
 
 // Generate files for arities 1 to N
-const N = 6; // Set N to the maximum arity you want to generate
+const N = 6 // Set N to the maximum arity you want to generate
 for (let arity = 0; arity <= N; arity++) {
-  generateArityFile(arity);
+  if (!fs.existsSync(`src/lib/subdir/make-enum-${arity}`)) {
+    fs.mkdirSync(`src/lib/subdir/make-enum-${arity}`)
+  }
+
+  generateTypesFile(arity)
+  generateMakeEnumFile(arity)
 }
