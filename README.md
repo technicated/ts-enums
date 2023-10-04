@@ -5,35 +5,35 @@ Sum types for TypeScript!
 Have you ever wanted to be able to write something like this in TypeScript?
 
 ```typescript
-// `enum` keyword is already taken
+// `enum` keyword was already taken 🤷
 variant Maybe<T> {
   case none
   case some(T)
 
   static fromValue<T>(value: T): Maybe<NonNullable<T>> {
     return ((value !== null) && (value !== undefined))
-      ? Maybe.some(value) // create an instance of `some` passing its argument(s)
+      ? Maybe.some(value) // create an instance of `some` passing its argument
       : Maybe.none // create an instance of none by simply using its name
   }
 
   map<U>(transform: (value: T) => U): Maybe<U> {
     switch (this) {
       case none: return Maybe.none // nothing to do here
-      case some(value): return Maybe.some(transform(value)) // bind `value` to what's inside this `this`, and value will be of type `T`
+      case some(value): return Maybe.some(transform(value)) // `value` is bound to what's inside `this`, and is of type `T`
     }
     // no warnings / errors down there from the compiler because the `switch` is exhaustive
   }
 ```
 
-Well, unfortunately this is not possible today... Maybe this can be introduced in TypeScript and compiled down to something in JavaScript, or it could be proposed as a Ecma feature, but surely it won't land in a couple of days!
+Well, unfortunately this is not possible today... Maybe this can be introduced in TypeScript and compiled down to something in JavaScript, or it could be proposed as an Ecma feature, but surely it won't land in a couple of days!
 
-This library tries to fill this gap, by introducing helper types and functions alongside a set of conventions to effectively use them.
+This library tries to fill this gap, by introducing helper types and functions alongside a set of **_conventions_** to effectively use them.
 
 Let's start!
 
 # Enum basics
 
-You can declare an enum by using a type alias (**_convention #1_**) and listing all its cases using the `Case` helper type:
+You can declare an enum by using a type alias (**_convention #1_**) and listing all of its cases using the `Case` helper type:
 
 ```typescript
 type Color =
@@ -42,9 +42,9 @@ type Color =
  | Case<'blue'>
 ```
 
-`Case` is generic over the case name, and takes it as its first argument.
+`Case` is generic over the case name, which is the first type argument you pass in.
 
-This is the type definition, now you need to create the actual, real value that holds all the cases. For this, you use the `makeEnum` helper function and assign its result to a `const` named the same way as the type (**_convention #2_**).
+This is the "type definition part" of the enum, now you need to create the actual, real value that holds the cases constructors. For this, you use the `makeEnum` helper function and assign its result to a `const` named the same way as the type (this is **_convention #2_**).
 
 ```typescript
 type Color =
@@ -55,9 +55,9 @@ type Color =
 const Color = makeEnum<Color>()
 ```
 
-The `makeEnum` is generic, and you **must** pass the type alias definition as its first parameter so TypeScript can be able to offer autocompletion for you on `const Color` members.
+The `makeEnum` function is generic, and you **must** pass the type alias definition as its type parameter so TypeScript can be able to offer autocompletion for you on `const Color` members.
 
-This is all it takes to create a simple enum! You can now create instances of it by using the case names as constructors:
+And this is all it takes to create a simple enum! You can now instantiate it by using the case names as constructors:
 
 ```typescript
 const r = Color.red() // .red is autocompleted, and r is of type `Color`
@@ -65,7 +65,7 @@ const g = Color.green() // .green is autocompleted, and g is of type `Color`
 const b = Color.blue() // .blue is autocompleted, and b is of type `Color`
 ```
 
-You can check the case of the enum value by inspecting its `case` property. You can do this whenever a boolean expression is required, and the type if the enum value will be even narrowed to the specific case in the subsequent scope:
+You can check the case of the enum value by inspecting its `case` property. You can do this whenever a boolean expression is required, and the type of the enum value will event be narrowed to the specific case in the subsequent scope (useful when you have a [payload](#adding-a-payload)):
 
 ```typescript
 if (r.case === 'red') {
@@ -83,10 +83,10 @@ if (g.case === 'red') {
 // prints "No red found..."
 ```
 
-However, you get the best behavior when you use a switch statement:
+However, you get the strongest behavior when you use a `switch` statement:
 
 ```typescript
-function makeColor() { ... }
+function makeColor(): Color { ... }
 
 let n: number
 
@@ -119,14 +119,14 @@ function isFavoriteColor(c: Color): boolean {
 }
 ```
 
-Even better, if you add new cases to you enum the compiler will tell you that `n` is now uninitialized in some code paths and that `isFavoriteColor` does not return a value so you must either add `undefined` to the return type or handle all cases.
+Even better, if you add new cases to you enum the compiler will tell you that `n` is now uninitialized in some code paths and that `isFavoriteColor` does not return a value so you must either add `undefined` to the return type or handle all the missing cases.
 
 # Adding a payload
 
 You add a payload to your enum by passing a second parameter to the `Case` type:
 
 ```typescript
-type Example =
+type WithPayload =
   | Case<'none'> // will not carry a payload
   | Case<'primitive', number>
   | Case<'tuple', [string, boolean]>
@@ -134,39 +134,43 @@ type Example =
   | Case<'array', Person[]>
 ```
 
-You can access the payload on an instance of your enum using the `p` property. However, doing so outside of an `if` / `switch` / etc will return a value whose type is the union of the types of all the payloads, since TypeScript cannot know which case your value is.
+You can access the payload on an instance of your enum using the `p` property. However, doing this outside of an `if` / `switch` / whatever will return a value whose type is _the union of the types of all the payloads_, since TypeScript cannot know the exact case of the enum instance.
 
 ```typescript
-function makeExample() { ... }
+function makeEnumWithPayload(): WithPayload { ... }
 
-const e = makeExample()
-const payload = e.p
+const wp = makeEnumWithPayload()
+const payload = wp.p
 // `payload` is of type `unique symbol` | `number` | `[string, boolean]` | `Person` | `Person[]`
 // What's about `unique symbol` you say? More on that later...
 
-switch (e.case) {
+switch (wp.case) {
   case 'none':
     // nothing to unpack here
     console.log('is empty')
     break
   case 'primitive':
-    // `e.p` is of type `number`
-    console.log('squared number is', e.p * e.p)
+    // `wp.p` is of type `number`
+    console.log('squared number is', wp.p * wp.p)
     break
   case 'tuple':
-    // `e.p` is of type `[string, boolean]`
-    console.log('tuple values are', e.p[0], e.p[1])
+    // `wp.p` is of type `[string, boolean]`
+    console.log('tuple values are', wp.p[0], wp.p[1])
     break
   case 'object':
-    // `e.p` is of type `Person`
-    console.log('person name is', e.p.name)
+    // `wp.p` is of type `Person`
+    console.log('person name is', wp.p.name)
     break
   case 'array':
-    // `e.p` is of type `Person[]`
-    console.log('people names are', e.p.map(({ name }) => name).joined(', '))
+    // `wp.p` is of type `Person[]`
+    console.log('people names are', wp.p.map(({ name }) => name).joined(', '))
     break
 }
 ```
+
+One last note: a payload-less enum is not actually "empty"! It does, in fact, contain a payload of value `unit`, which is a `Symbol` representing the absence of an actual, explicit payload. This is where the `unique symbol` from earlier came from! This `unit` is a constant value and doesn't add any extra information to the enum case, so it's like it doesn't exist (refer to _product types_ for further context).
+
+[todo] This is an implementation detail of the library and is mostly transparent to the clients, but it's useful to know that this little secret exists. The reason for this behavior is to make all the types easier to deal with i.e. when creating conditional types it was easier to check for a `Unit` payload than to check if the `p` property existed or not.
 
 # Adding a prototype
 
