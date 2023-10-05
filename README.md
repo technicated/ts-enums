@@ -31,7 +31,17 @@ This library tries to fill this gap, by introducing helper types and functions a
 
 Let's start!
 
+# Table of contents
+
+* [Enum basics](#enum-basics)
+* [Adding a payload](#adding-a-payload)
+* [Adding a prototype](#adding-a-prototype)
+* [Adding static methods](#adding-static-methods)
+* [Introducing generics](#introducing-generics)
+
 # Enum basics
+
+[☝️ Back to TOC](#table-of-contents)
 
 You can declare an enum by using a type alias (**_convention #1_**) and listing all of its cases using the `Case` helper type:
 
@@ -123,6 +133,8 @@ Even better, if you add new cases to you enum the compiler will tell you that `n
 
 # Adding a payload
 
+[☝️ Back to TOC](#table-of-contents)
+
 You add a payload to your enum by passing a second parameter to the `Case` type:
 
 ```typescript
@@ -173,6 +185,8 @@ One last note: a payload-less enum is not actually "empty"! It does, in fact, co
 `unit` and its type `Unit` are an implementation detail of the library and are mostly transparent to clients, but it's useful to know that the library has this little secret. The reason for its existence is to make the types of the library easier to define and deal with, in particular when creating conditional types it was easier to check for a `Unit` payload than to check if the `p` property existed or not.
 
 # Adding a prototype
+
+[☝️ Back to TOC](#table-of-contents)
 
 You might want to add methods to your enum, like you do on your objects. To do this, you perform two steps: first, you declare an interface to shape your prototype, and you call this interface `<MyEnumName>Proto` (**_convention #3_**), then you add this interface to the main type declaration and implement it using the first parameter of the `makeEnum` helper function:
 
@@ -278,6 +292,8 @@ Finally, there is **_convention #5_**: you should omit the parameters and return
 
 # Adding static methods
 
+[☝️ Back to TOC](#table-of-contents)
+
 When you need to add static methods or properties to your enum, you also need to perform two steps, similar to how you add a prototype. First step: declare an interface with name `<MyEnumName>Type` (**_convention #6_**) containing all the desired methods / properties; step two: pass this interface as the second generic parameter to `makeEnum` and implement it using the first parameter of the function:
 
 ```typescript
@@ -308,6 +324,8 @@ const Color = makeEnum<Color, ColorType>({
 Defining the type has not the same mini-issue of the [prototype declaration](#adding-a-prototype): you can directly refer to the enum type in the methods definition, so TypeScript can correctly reason about your types. This is true even for generic enums, since for static methods you are forced to specify the generic parameters (this is true even for "regular" classes).
 
 # Introducing generics
+
+[☝️ Back to TOC](#table-of-contents)
 
 The most powerful abstractions come from generics, and luckily TypeScript has them! However, to correctly integrate generics with `ts-enums`, you need to do an extra step to help the compiler digest and "pass down" the information about the generic types.
 
