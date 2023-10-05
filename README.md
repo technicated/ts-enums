@@ -134,7 +134,7 @@ type WithPayload =
   | Case<'array', Person[]>
 ```
 
-You can access the payload on an instance of your enum using the `p` property. However, doing this outside of an `if` / `switch` / whatever will return a value whose type is _the union of the types of all the payloads_, since TypeScript cannot know the exact case of the enum instance.
+You can access the payload on an instance of your enum using the `p` property. However, doing this outside of an `if` / `switch` / conditional will return a value whose type is _the union of the types of all the payloads_, since TypeScript cannot know the exact case of the enum instance.
 
 ```typescript
 function makeEnumWithPayload(): WithPayload { ... }
@@ -170,7 +170,7 @@ switch (wp.case) {
 
 One last note: a payload-less enum is not actually "empty"! It does, in fact, contain a payload of value `unit`, which is a `Symbol` representing the absence of an actual, explicit payload. This is where the `unique symbol` from earlier came from! This `unit` is a constant value and doesn't add any extra information to the enum case, so it's like it doesn't exist (refer to _product types_ for further context).
 
-[todo] This is an implementation detail of the library and is mostly transparent to the clients, but it's useful to know that this little secret exists. The reason for this behavior is to make all the types easier to deal with i.e. when creating conditional types it was easier to check for a `Unit` payload than to check if the `p` property existed or not.
+`unit` and its type `Unit` are an implementation detail of the library and are mostly transparent to clients, but it's useful to know that the library has this little secret. The reason for its existence is to make the types of the library easier to define and deal with, in particular when creating conditional types it was easier to check for a `Unit` payload than to check if the `p` property existed or not.
 
 # Adding a prototype
 
