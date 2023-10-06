@@ -27,9 +27,11 @@ variant Maybe<T> {
 
 Well, unfortunately this is not possible today... Maybe this can be introduced in TypeScript and compiled down to something in JavaScript, or it could be proposed as an Ecma feature, but surely it won't land in a couple of days!
 
-This library tries to fill this gap, by introducing helper types and functions alongside a set of **_conventions_** to effectively use them.
+This library tries to fill this gap, by introducing helper types and functions alongside a set of **_conventions_** to effectively use them. This will allow you to define your sum types / discriminated unions / tagged unions in TypeScript!
 
-Let's start!
+**IMPORTANT NOTE:** Please be aware that for the scope of this library, the term **enum** will be used to refer to discriminated unions and not to the basic enum feature that TypeScript provides.
+
+That aside, let's start!
 
 # Table of contents
 
@@ -45,7 +47,7 @@ Main topics:
 Extra:
 
 * [Conventions recap](#conventions-recap)
-* [But why do I need enums?](todo)
+* [But why do I need enums?](#but-why-do-i-need-enums)
 * [ts-pattern library](todo)
 
 # Enum basics
@@ -433,3 +435,15 @@ Here's a list of the conventions this library states for your convenience!
 **_Convention #5_**: In the `makeProto` function, omit all parameters and return types from the implementation of the prototype methods.
 
 **_Convention #6_**: When defining a type to hold static methods for your enum, name it `<EnumName>Type`.
+
+# But why do I need enums?
+
+[☝️ Back to TOC](#table-of-contents)
+
+This is a valid question, _why do we even need enums_? If they are so important, why doesn't TypeScript (or rather JavaScript) offer them?
+
+As a reminder, TypeScript _does_ offer enums, but these are not what we are talking about. TypeScript enums are like **C** enums, just a list of names to which numbers or string are attached to.
+
+So, a more precise question could be, **why do we need discriminated unions**?
+
+todo
