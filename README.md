@@ -40,13 +40,13 @@ Main topics:
 * [Adding a prototype](#adding-a-prototype)
   * [Recursive definition issue](#prototype-recursive-definition-issue)
 * [Adding static methods](#adding-static-methods)
-* [Introducing generics](#introducing-generics)
+* [Using generics](#using-generics)
 
 Extra:
 
 * [Conventions recap](#conventions-recap)
-* [But why do I need enums?]()
-* [ts-pattern library]()
+* [But why do I need enums?](todo)
+* [ts-pattern library](todo)
 
 # Enum basics
 
@@ -334,17 +334,17 @@ const Color = makeEnum<Color, ColorType>({
 })
 ```
 
-Defining the type has not the same mini-issue of the [prototype declaration](#adding-a-prototype): you can directly refer to the enum type in the methods definition, so TypeScript can correctly reason about your types. This is true even for generic enums, since for static methods you are forced to specify the generic parameters (this is true even for "regular" classes).
+[THIS IS EXPECTED TO CHANGE IN ORDER TO UNIFORM THE TWO INTERFACES] Defining the type has not the same issue of the [prototype declaration](#adding-a-prototype): you can directly refer to the enum type in the methods definition, so TypeScript can correctly reason about your types. This is true even for generic enums, since for static methods you are forced to specify the generic parameters (this is true even for "regular" classes). 
 
-# Introducing generics
+# Using generics
 
 [☝️ Back to TOC](#table-of-contents)
 
 The most powerful abstractions come from generics, and luckily TypeScript has them! However, to correctly integrate generics with `ts-enums`, you need to do an extra step to help the compiler digest and "pass down" the information about the generic types.
 
-All the examples will use a generic enum with one generic parameter, but this library supports up to six of them.
+All the following examples will use a generic enum with a single generic parameter, but this library supports up to six of them (although I hope nobody will never need to utilize them 😅).
 
-Let's translate the original `Maybe` example from the invented `variant` syntax to this library's syntax. First the code, then the explanation - and for now we omit the prototype and the static methods.
+Let's translate the original `Maybe` example from the made-up `variant` syntax to this library's syntax. First the code, then the explanation - and for now we are going to omit the prototype and the static methods.
 
 ```typescript
 type Maybe<T> =
@@ -358,13 +358,26 @@ interface MaybeHKT extends HKT {
 const Maybe = makeEnum1<MaybeHKT>()
 ```
 
-The main differences are the use of the helper function `makeEnum1` instead of `makeEnum`, (there are 7 of them, from `makeEnum` to `makeEnum6`) and the presence of the strange interface `MaybeHKT`.
+The main differences here are the use of the helper function `makeEnum1` instead of `makeEnum` (note the trailing _1_) and the presence of the strange interface `MaybeHKT`.
 
-We won't delve into the nitty-gritty higher-order functional-programming type-algebra details here, the important thing to understand for using this library is that this `HKT` helper and its higher-order versions keep the generic parameters of your enum abstract until you actually instantiate your enum, so that type inference and type completion work correctly. For more information, please refer to [my source for this concept](https://dev.to/effect-ts/encoding-of-hkts-in-typescript-5c3).
+First, the "overloaded" `makeEnum<n>` functions are needed in order for TypeScript to handle the correct number of generic type parameters, and there are seven variation of them (`makeEnum`, `makeEnum1`, ..., `makeEnum6`). The signature of all of them is identical, so modifying the number of generic type parameters used is a straightforward process - simply alter the function call.
 
-By the way, it's only a three-liner, and I hope is not a deal breaker for adopting this library!
+For the second difference (`HKT`), we won't delve into the nitty-gritty higher-order functional-programming algebra-of-types details here (*), but we'll just going to understand what the `HKT` helper does for this library.
 
-Let's continue by implementing the prototype and a static member for our generic enum:
+`HTK` simply **defers the resolution of generic parameters** within the enum type until you explicitly instantiate it. This approach ensures that TypeScript's type inference and code completion mechanisms work seamlessly.
+
+_<small>(*) random blabbering, see [Bruce Richardson's answer on Quora](https://www.quora.com/How-are-higher-kinded-types-different-from-type-constructors-with-parametrized-generic-types) (terminology-heavy) or [the source for my implementation of this concept](https://dev.to/effect-ts/encoding-of-hkts-in-typescript-5c3) for more information.</small>_
+
+By the way, this `HTK` stuff is only a three-liner, so I hope is not a deal breaker for adopting this library! Just faithfully define your extension of if as in the following snippet and enjoy:
+
+```typescript
+// example using `HKT3`, which has three generic parameters available for your enum type
+interface MyEnumHKT extends HKT3 {
+  readonly type MyEnum<this['_A'], this['_B'], this['_C']>
+}
+```
+
+Let's finish by implementing the prototype and a static member for our generic enum - as you will see, the process remains identical to the non-generic case:
 
 ```typescript
 interface MaybeProto<T> {
