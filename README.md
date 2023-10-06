@@ -446,4 +446,62 @@ As a reminder, TypeScript _does_ offer enums, but these are not what we are talk
 
 So, a more precise question could be, **why do we need discriminated unions**?
 
+Discriminated unions are the dual of "standard" objects (*), and together they allow programmers to model data more accurately, eliminating invalid states at the type level.
+
+_<small>(*) not only objects in the strict sense, but arrays and tuples are product types, too</small>_
+
+While objects acts like the "multiplication" of the types of the properties they contain, discriminated unions act like the "sum" of the types they contain. An example will clarify this:
+
+```typescript
+type MealSize = 'small' | 'regular' | 'large' | 'xl'
+// there are 4 possible values for an instance of `MealSize`
+
+type Dessert = 'apple pie' | 'brownie' | 'cheesecake'
+// there are 3 possible values for an instance of `Dessert`
+
+interface Dinner {
+  mainMealSize: MealSize
+  dessert: Dessert
+}
+
+/**
+ * How many different instances of `Dinner` can we create? Let's enumerate them:
+ * 
+ * { mainMealSize: 'small',   dessert: 'apple pie'  }
+ * { mainMealSize: 'small',   dessert: 'brownie'    }
+ * { mainMealSize: 'small',   dessert: 'cheesecake' }
+ * { mainMealSize: 'regular', dessert: 'apple pie'  }
+ * { mainMealSize: 'regular', dessert: 'brownie'    }
+ * { mainMealSize: 'regular', dessert: 'cheesecake' }
+ * { mainMealSize: 'large',   dessert: 'apple pie'  }
+ * { mainMealSize: 'large',   dessert: 'brownie'    }
+ * { mainMealSize: 'large',   dessert: 'cheesecake' }
+ * { mainMealSize: 'xl',      dessert: 'apple pie'  }
+ * { mainMealSize: 'xl',      dessert: 'brownie'    }
+ * { mainMealSize: 'xl',      dessert: 'cheesecake' }
+ *
+ * There are 12 possible unique instances of `Dinner`, and guess you what - 4 * 3 = 12
+ */
+
+type OneShotFood =
+  | Case<'meal', MealSize>
+  | Case<'dessert', Dessert>
+
+const OneShotFood = makeEnum<OneShotFood>()
+
+/**
+ * How many different instances of `OneShotFood` can we create? Let's enumerate them:
+ * 
+ * { case: 'meal',    p: 'small'      }
+ * { case: 'meal',    p: 'regular'    }
+ * { case: 'meal',    p: 'large'      }
+ * { case: 'meal',    p: 'xl'         }
+ * { case: 'dessert', p: 'apple pie'  }
+ * { case: 'dessert', p: 'brownie'    }
+ * { case: 'dessert', p: 'cheesecake' }
+ * 
+ * There are 7 possible unique instances of `OneShotFood`, and guess you what - 4 + 3 = 7
+ */
+```
+
 todo
