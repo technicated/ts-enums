@@ -33,11 +33,20 @@ Let's start!
 
 # Table of contents
 
+Main topics:
+
 * [Enum basics](#enum-basics)
 * [Adding a payload](#adding-a-payload)
 * [Adding a prototype](#adding-a-prototype)
+  * [Recursive definition issue](#prototype-recursive-definition-issue)
 * [Adding static methods](#adding-static-methods)
 * [Introducing generics](#introducing-generics)
+
+Extra:
+
+* [Conventions recap](#conventions-recap)
+* [But why do I need enums?]()
+* [ts-pattern library]()
 
 # Enum basics
 
@@ -188,7 +197,7 @@ One last note: a payload-less enum is not actually "empty"! It does, in fact, co
 
 [☝️ Back to TOC](#table-of-contents)
 
-You might want to add methods to your enum, like you do on your objects. To do this, you perform two steps: first, you declare an interface to shape your prototype, and you call this interface `<MyEnumName>Proto` (**_convention #3_**), then you add this interface to the main type declaration and implement it using the first parameter of the `makeEnum` helper function:
+You might want to add methods to your enum, like you do on objects. To do this, you perform two steps: first, you declare an interface to define the shape of the prototype, calling this interface `<MyEnumName>Proto` (**_convention #3_**), then you add this interface to the main type declaration and implement it using the first parameter of the `makeEnum` helper function:
 
 ```typescript
 interface AnimalProto {
@@ -229,7 +238,11 @@ It is important to note that you need to use a function to create the prototype,
 
 The reason has to to do with _generic parameters_, which we'll talk about in a subsequent section. In brief, when using generics, you cannot declare the prototype as an object because then you have no generic type(s) to pass to your generic enum type. By using a function instead, the library is able to sneak in the generic argument(s) for you!
 
-However, this brings an issue: if you need to define a method of the prototype using the enum type itself, you will get the TypeScript error `"'your enum type' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer"`.
+## Prototype: recursive definition issue
+
+[☝️ Back to TOC](#table-of-contents)
+
+Defining a prototype this way brings an issue: if you need to define a method using the enum type itself (as a part of the signature or the method body), you will get the TypeScript error `"'your enum type' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer"`.
 
 ```typescript
 interface AnimalProto {
@@ -389,3 +402,21 @@ const Maybe = makeEnum1<MaybeHKT>({
   },
 })
 ```
+
+# Conventions recap
+
+[☝️ Back to TOC](#table-of-contents)
+
+Here's a list of the conventions this library states for your convenience!
+
+**_Convention #1_**: Declare your enum type using a _type alias_.
+
+**_Convention #2_**: Assign the result of the `makeEnum` function to a `const` with the same name as the enum type.
+
+**_Convention #3_**: When defining a prototype for your enum, name it `<EnumName>Proto`.
+
+**_Convention #4_**: When using the enum copy inside the `makeProto` function (see [todo](#adding-a-prototype)), call the binding with the same name as the enum.
+
+**_Convention #5_**: In the `makeProto` function, omit all parameters and return types from the implementation of the prototype methods.
+
+**_Convention #6_**: When defining a type to hold static methods for your enum, name it `<EnumName>Type`.
