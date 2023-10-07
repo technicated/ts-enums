@@ -48,6 +48,8 @@ Extra:
 
 * [Conventions recap](#conventions-recap)
 * [But why do I need enums?](#but-why-do-i-need-enums)
+  * [Example #1 - Product item](#example-1---product-item)
+  * [Example #2 - UI framework View Model](#example-2---ui-framework-view-model)
 * [ts-pattern library](todo)
 
 # Enum basics
@@ -504,4 +506,271 @@ const OneShotFood = makeEnum<OneShotFood>()
  */
 ```
 
-todo
+I hope the examples explained what I meant! So, product types (object, arrays, ...) and sum types (proper enums / discriminated unions) are two faces of the same coin, and knowing both of them lets you model your data with more accuracy.
+
+I will now provide some examples of suboptimal data modeling that only uses product types and an updated version that uses both product and sum types.
+
+## Example #1 - Product item
+
+[☝️ Back to TOC](#table-of-contents)
+
+```typescript
+// -- suboptimal way
+
+class Product {
+  // remember to put this to `false` if `isInStock` is `true`
+  isInBackOrder: boolean
+  isInStock: boolean
+  name: string
+  // remember to put this to `0` if `isInStock` is `false`
+  quantity: number
+
+  static inStock(name: string, quantity: number): Product {
+    return new Product(name, true, quantity, false)
+  }
+
+  static outOfStock(name: string, isInBackOrder: boolean): Product {
+    return new Product(name, true, 0, isInBackOrder)
+  }
+
+  // hide the constructor, create instances only through factory methods
+  private constructor(
+    name: string,
+    isInStock: boolean,
+    quantity: number,
+    isInBackOrder: boolean
+  ) {
+    this.isInBackOrder = isInBackOrder
+    this.isInStock = isInStock
+    this.name = name
+    this.quantity = quantity
+  }
+
+  reorder(): void {
+    if (this.isInStock && this.quantity !== 0) {
+      throw new Error('We were not out of stock!')
+    }
+
+    this.isInBackOrder = true
+    // oops! forgot to switch `isInStock` to `false`
+  }
+
+  restock(quantity: number): void {
+    this.quantity += quantity
+    // oops! forgot to check and / or switch `isInStock` and / or `isInBackOrder`
+  }
+
+  sell(quantity: number): void {
+    if (quantity > this.quantity) {
+      throw new Error('Cannot sell more than you have!')
+    }
+
+    this.quantity -= quantity
+
+    if (quantity === 0) {
+      this.isInStock = false
+    }
+  }
+}
+
+// -- better way
+
+interface StatusProto {
+  get isInStock(): boolean
+}
+
+type Status =
+  | Case<'inStock', { quantity: number }>
+  | Case<'outOfStock', { isInBackOrder: boolean }>
+
+const Status = makeEnum<Status>({
+  makeProto: () => ({
+    get isInStock() {
+      switch (this.case) {
+        case 'inStock': return true
+        case 'outOfStock': return false
+      }
+    }
+  }),
+})
+
+class Product {
+  name: string
+  status: Status
+
+  get isInStock(): boolean {
+    return this.status.isInStock
+  }
+
+  static inStock(name: string, quantity: number): Product {
+    return new Product(name, Status.inStock({ quantity }))
+  }
+
+  static outOfStock(name: string, isInBackOrder: boolean): Product {
+    return new Product(name, Status.outOfStock({ isInBackOrder }))
+  }
+
+  // no need to hide constructor, even if we provide convenience factory methods
+  constructor(name: string, status: Status) {
+    this.name = name
+    this.status = status
+  }
+
+  reorder(): void {
+    if (this.status.case === 'inStock' && this.status.quantity > 0) {
+      throw new Error('We were not out of stock!')
+    }
+
+    this.status = Status.outOfStock({ isInBackOrder: true })
+    // impossible to forget to switch status!
+  }
+
+  restock(quantity: number): void {
+    const baseQuantity = this.status.case === 'inStock'
+      ? this.status.quantity
+      : 0
+
+    this.status = Status.inStock({ quantity: baseQuantity + quantity })
+
+    // impossible to forget to check `isInStock` or `isInBackOrder`!
+  }
+
+  restock_variant(quantity: number): void {
+    let status: Status
+
+    switch (this.status.case) {
+      case 'inStock':
+        status = Status.inStock({ quantity: this.status.quantity + quantity })
+        break
+      case 'outOfStock':
+        status = Status.inStock({ quantity })
+        break
+    }
+
+    this.status = status
+
+    // impossible to forget to check `isInStock` or `isInBackOrder`!
+  }
+
+  sell(quantity: number): void {
+    // this method might be a bit more verbose than before, but its intent is clearer. Given the fact that we were forced to check `this.status`'s case, we were also able to throw a better error if we were out of stock
+    
+    switch (this.status.case) {
+      case 'inStock':
+        const newQuantity = this.status.quantity - quantity
+
+        if (newQuantity < 0) {
+          throw new Error('Cannot sell more than you have!')
+        }
+
+        if (newQuantity === 0) {
+          this.status = Status.outOfStock({ isInBackOrder: false })
+        } else {
+          this.status = Status.inStock({ quantity: newQuantity })
+        }
+
+        break
+      case 'outOfStock':
+        throw new Error('Cannot sell out-of-stock Product!')
+    }
+  }
+}
+```
+
+## Example #2 - UI framework View Model
+
+[☝️ Back to TOC](#table-of-contents)
+
+```typescript
+// -- suboptimal way
+
+class ItemDetailViewModel {
+  public isShowingDeleteAlert: boolean = false
+  public isShowingEditModal: boolean = false
+  public scratchItemForEditing: Item | null = null
+
+  constructor(public item: Item) { }
+
+  cancelItemDeletionButtonClicked(): void {
+    this.isShowingDeleteAlert = false
+    // we don't need to reset the "edit" states, right?
+  }
+
+  cancelItemEditingButtonClicked(): void {
+    this.isShowingEditModal = false
+    this.scratchItemForEditing = null
+    // we don't need to reset the "delete" state, right?
+  }
+
+  confirmItemDeletionButtonClicked(): void { ... }
+  
+  confirmItemEditingButtonClicked(): void {
+    this.item = this.scratchItemForEditing // are we sure this is not `null`?
+    this.isShowingEditModal = false
+    this.scratchItemForEditing = null
+    // we don't need to reset the "delete" state, right?
+  }
+
+  deleteItemButtonClicked(): void {
+    // remember to manually clear all invalid states
+    this.isShowingDeleteAlert = true
+    this.isShowingEditModal = false
+    this.scratchItemForEditing = null
+  }
+
+  editItemButtonClicked(): void {
+    // remember to manually clear all invalid states
+    this.isShowingDeleteAlert = false
+    this.isShowingEditModal = true
+    this.scratchItemForEditing = deep_copy(this.item)
+  }
+
+  // this is tedious and prone to error, but is manageable. But what if we add other "navigation" statuses? We must manually audit all code and fix every method...
+}
+
+// -- better way
+
+type Presentation =
+  | Case<'deleteAlert'>
+  | Case<'editModal', { scratchItem: Item }>
+
+const Presentation = makeEnum<Presentation>()
+
+class ItemDetailViewModel {
+  public presentation: Presentation | null = null
+
+  constructor(public item: Item) { }
+
+  cancelItemDeletionButtonClicked(): void {
+    this.presentation = null
+  }
+
+  cancelItemEditingButtonClicked(): void {
+    this.presentation = null
+  }
+
+  confirmItemDeletionButtonClicked(): void { ... }
+  
+  confirmItemEditingButtonClicked(): void {
+    if (this.presentation.case === 'editModal') {
+      this.item = this.scratchItemForEditing
+    } else {
+      console.warn('Item editing confirmed while not in editing mode...')
+    }
+
+    this.presentation = null
+  }
+
+  deleteItemButtonClicked(): void {
+    this.presentation = Presentation.deleteAlert()
+  }
+
+  editItemButtonClicked(): void {
+    this.presentation = Presentation.editModal({
+      scratchItemForEditing: deep_copy(this.item),
+    })
+  }
+}
+```
+
+[todo] third example?
