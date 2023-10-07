@@ -773,4 +773,99 @@ class ItemDetailViewModel {
 }
 ```
 
-[todo] third example?
+## Example #3 - Loading data
+
+[☝️ Back to TOC](#table-of-contents)
+
+```typescript
+// -- suboptimal way
+
+class DataLoader<Item> {
+  private loadPromise: Promise<item[]> | null = null
+
+  // how many invalid states can these variables represent?
+  // error + items?
+  // error + items + isLoading = true?
+  // error + items + isSuccess = null?
+  // isLoading = true + isSuccess != null?
+  // no error + empty items + isSuccess = true? missing error or empty result?
+  // etc...
+  error: any
+  items: Item[] = []
+  isLoading: boolean = false
+  isSuccess: boolean | null = null
+
+  constructor(public url: string) { }
+
+  async performLoad(): Promise<Item[]> {
+    if (!this.isLoading) {      
+      this.isLoading = true
+
+      this.loadPromise = new Promise((resolve, reject) => {
+          // load data from `this.url`
+
+        if (there_was_error) {
+          this.error = load_error
+          this.isLoading = false
+          this.isSuccess = false
+          reject(load_error)
+        } else {
+          this.items = loaded_items
+          this.isLoading = false
+          this.isSuccess = true
+          resolve(loaded_items)
+        }
+      })
+    }
+
+    return this.loadPromise
+  }
+}
+
+// -- better way
+
+type DataLoadingStatus<Item> =
+  | Case<'idle'>
+  | Case<'loading', Promise<Item[]>>
+  | Case<'loaded', Item[]>
+  | Case<'error', { error: any }>
+
+interface DataLoadingStatusHKT extends HKT {
+  readonly type: DataLoadingStatus<this['_A']>
+}
+
+const DataLoadingStatus = makeEnum1<DataLoadingStatusHKT>()
+
+class DataLoader<Item> {
+  loadStatus: DataLoadingStatus<Item> = DataLoadingStatus.idle()
+
+  constructor(public url: string) { }
+
+  async performLoad(): Promise<Item[]> {
+    switch (this.loadStatus.case) {
+      case 'idle':
+        const loadPromise = new Promise((resolve, reject) => {
+          // load data from `this.url`
+
+          if (there_was_error) {
+            this.loadStatus = DataLoadingStatus.error({ error: load_error })
+          } else {
+            this.loadStatus = DataLoadingStatus.loaded(loaded_items)
+          }
+        })
+
+        this.loadStatus = DataLoadingStatus.loading(loadPromise)
+        return loadPromise
+
+      case 'loading':
+        return this.loadStatus.p
+      
+      case 'loaded':
+        return Promise.resolve(this.loadStatus.p)
+
+      case 'error':
+        return Promise.reject(this.loadStatus.p.error)
+    }
+  }
+}
+```
