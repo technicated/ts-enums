@@ -44,6 +44,12 @@ Main topics:
 * [Adding static methods](#adding-static-methods)
 * [Using generics](#using-generics)
 
+Helpers:
+
+* [Cast](#cast)
+* [cases](todo)
+* [CasesOf](todo)
+
 Extra:
 
 * [Conventions recap](#conventions-recap)
@@ -418,6 +424,31 @@ const Maybe = makeEnum1<MaybeHKT>({
     },
   },
 })
+```
+
+# Cast
+
+[☝️ Back to TOC](#table-of-contents)
+
+The `Cast` util type allows you to manually narrow the type of an enum to a specific case. This can be useful, for example, to create type guards.
+
+```typescript
+type Hobby =
+  | Case<'gardening', { hasGreenThumb: boolean }>
+  | Case<'running', { milesPerDay: number }>
+  | Case<'tv', { favoriteSeries: string }>
+
+  function isHealthyHobby(h: Hobby): h is Cast<Hobby, 'running'> {
+    return h.case === 'running'
+  }
+
+const hobby = ...
+
+if (isHealthyHobby(hobby)) {
+  // inside this block, `hobby.case` is 'running' and `hobby.p` is
+  // `{ milesPerDay: number}`
+  console.log(`Miles run per day: ${hobby.p.milesPerDay}!`)
+}
 ```
 
 # Conventions recap
