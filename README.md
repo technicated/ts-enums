@@ -148,7 +148,8 @@ function isFavoriteColor(c: Color): boolean {
     // no need for a `default` case!
   }
 
-  // no need for a `return` either! TypeScript will know that the function will return from one of the `switch` cases
+  // no need for a `return` either! TypeScript will know that the function will
+  // return from one of the `switch` cases
 }
 ```
 
@@ -530,7 +531,7 @@ const err = matchesCase(result, 'wrong')
 function extract<
   R extends Result<unknown, unknown>,
   C extends CasesOf<typeof Result>
->(r: R, c: C): Cast<R, C>['p'] { ... }
+>(r: R, c: C): Cast<R, C>['p'] | undefined { ... }
 
 const r: Result<number, string> = ...
 const n = extract(r, 'success')
@@ -706,15 +707,19 @@ class Product {
   }
 }
 
+// ... you didn't even notice that the implementation of `static outOfStock()`
+// has an error, did you? It passes `true` to the `isInStock` parameter!
+
 // -- better way
 
 interface StatusProto {
   get isInStock(): boolean
 }
 
-type Status =
+type Status = StatusProto & (
   | Case<'inStock', { quantity: number }>
   | Case<'outOfStock', { isInBackOrder: boolean }>
+)
 
 const Status = makeEnum<Status>({
   makeProto: () => ({
@@ -846,7 +851,8 @@ class ItemDetailViewModel {
   confirmItemDeletionButtonClicked(): void { ... }
   
   confirmItemEditingButtonClicked(): void {
-    this.item = this.scratchItemForEditing // are we sure this is not `null`?
+    // are we really sure this is not `null`?
+    this.item = this.scratchItemForEditing!
     this.isShowingEditModal = false
     this.scratchItemForEditing = null
     // we don't need to reset the "delete" state, right?
@@ -1194,7 +1200,7 @@ state = appReducer(
 
 t.deepEqual(state, {
   counters: [
-    { counter: 0, numberFact: null },
+    { counter: 1, numberFact: null },
     { counter: 2, numberFact: '2 is the only even prime' },
   ],
 })
@@ -1206,7 +1212,7 @@ state = appReducer(
 
 t.deepEqual(state, {
   counters: [
-    { counter: 0, numberFact: null },
+    { counter: 1, numberFact: null },
     { counter: 0, numberFact: null },
   ],
 })
