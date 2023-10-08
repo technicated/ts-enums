@@ -50,7 +50,7 @@ Utilities:
 * [cases](#cases)
 * [CasesOf](#casesof)
 
-Extra:
+Extras:
 
 * [Conventions recap](#conventions-recap)
 * [But why do I need enums?](#but-why-do-i-need-enums)
@@ -59,7 +59,9 @@ Extra:
   * [Example #3 - Loading data](#example-3---loading-data)
 * [ts-pattern library](#ts-pattern-library)
 
-# Enum basics
+# Main topics
+
+## Enum basics
 
 [☝️ Back to TOC](#table-of-contents)
 
@@ -151,7 +153,7 @@ function isFavoriteColor(c: Color): boolean {
 
 Even better, if you add new cases to you enum the compiler will tell you that `n` is now uninitialized in some code paths and that `isFavoriteColor` does not return a value so you must either add `undefined` to the return type or handle all the missing cases.
 
-# Adding a payload
+## Adding a payload
 
 [☝️ Back to TOC](#table-of-contents)
 
@@ -204,7 +206,7 @@ One last note: a payload-less enum is not actually "empty"! It does, in fact, co
 
 `unit` and its type `Unit` are an implementation detail of the library and are mostly transparent to clients, but it's useful to know that the library has this little secret. The reason for its existence is to make the types of the library easier to define and deal with, in particular when creating conditional types it was easier to check for a `Unit` payload than to check if the `p` property existed or not.
 
-# Adding a prototype
+## Adding a prototype
 
 [☝️ Back to TOC](#table-of-contents)
 
@@ -249,7 +251,7 @@ It is important to note that you need to use a function to create the prototype,
 
 The reason has to to do with _generic parameters_, which we'll talk about in a subsequent section. In brief, when using generics, you cannot declare the prototype as an object because then you have no generic type(s) to pass to your generic enum type. By using a function instead, the library is able to sneak in the generic argument(s) for you!
 
-## Prototype: recursive definition issue
+### Prototype: recursive definition issue
 
 [☝️ Back to TOC](#table-of-contents)
 
@@ -314,7 +316,7 @@ This is a little unfortunate, but is a very small price to pay to make everythin
 
 Finally, there is **_convention #5_**: you should omit the parameters and return types of the prototype methods from its implementation. TypeScript will infer these for you, and you'll be immediately warned if something is wrong should you change your enum definition!
 
-# Adding static methods
+## Adding static methods
 
 [☝️ Back to TOC](#table-of-contents)
 
@@ -347,7 +349,7 @@ const Color = makeEnum<Color, ColorType>({
 
 [THIS IS EXPECTED TO CHANGE IN ORDER TO UNIFORM THE TWO INTERFACES] Defining the type has not the same issue of the [prototype declaration](#adding-a-prototype): you can directly refer to the enum type in the methods definition, so TypeScript can correctly reason about your types. This is true even for generic enums, since for static methods you are forced to specify the generic parameters (this is true even for "regular" classes). 
 
-# Using generics
+## Using generics
 
 [☝️ Back to TOC](#table-of-contents)
 
@@ -427,7 +429,9 @@ const Maybe = makeEnum1<MaybeHKT>({
 })
 ```
 
-# Cast
+# Utilities
+
+## Cast
 
 [☝️ Back to TOC](#table-of-contents)
 
@@ -452,7 +456,7 @@ if (isHealthyHobby(hobby)) {
 }
 ```
 
-# cases
+## cases
 
 [☝️ Back to TOC](#table-of-contents)
 
@@ -483,7 +487,7 @@ const routes: YourFavoriteFrameworkRoutes = [
 ]
 ```
 
-# CasesOf
+## CasesOf
 
 [☝️ Back to TOC](#table-of-contents)
 
@@ -532,7 +536,9 @@ const f = extract(r, 'failure')
 // `f` is `string`
 ```
 
-# Conventions recap
+# Extras
+
+## Conventions recap
 
 [☝️ Back to TOC](#table-of-contents)
 
@@ -550,7 +556,7 @@ Here's a list of the conventions this library states for your convenience!
 
 **_Convention #6_**: When defining a type to hold static methods for your enum, name it `<EnumName>Type`.
 
-# But why do I need enums?
+## But why do I need enums?
 
 [☝️ Back to TOC](#table-of-contents)
 
@@ -622,7 +628,7 @@ I hope the examples explained what I meant! So, product types (object, arrays, .
 
 I will now provide some examples of suboptimal data modeling that only uses product types and an updated version that uses both product and sum types.
 
-## Example #1 - Product item
+### Example #1 - Product item
 
 [☝️ Back to TOC](#table-of-contents)
 
@@ -791,7 +797,7 @@ class Product {
 }
 ```
 
-## Example #2 - UI framework View Model
+### Example #2 - UI framework View Model
 
 [☝️ Back to TOC](#table-of-contents)
 
@@ -893,7 +899,7 @@ class ItemDetailViewModel {
 }
 ```
 
-## Example #3 - Loading data
+### Example #3 - Loading data
 
 [☝️ Back to TOC](#table-of-contents)
 
@@ -992,7 +998,7 @@ class DataLoader<Item> {
 }
 ```
 
-# ts-pattern library
+## ts-pattern library
 
 [☝️ Back to TOC](#table-of-contents)
 
