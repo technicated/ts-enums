@@ -35,7 +35,7 @@ That aside, let's start!
 
 # Table of contents
 
-Main topics:
+Main topics
 
 * [Enum basics](#enum-basics)
 * [Adding a payload](#adding-a-payload)
@@ -44,14 +44,15 @@ Main topics:
 * [Adding static methods](#adding-static-methods)
 * [Using generics](#using-generics)
 
-Utilities:
+Utilities
 
 * [Cast](#cast)
 * [cases](#cases)
 * [CasesOf](#casesof)
 
-Extras:
+Extras
 
+* [Known issues](#known-issues)
 * [Conventions recap](#conventions-recap)
 * [But why do I need enums?](#but-why-do-i-need-enums)
   * [Example #1 - Product item](#example-1---product-item)
@@ -539,6 +540,16 @@ const f = extract(r, 'failure')
 ```
 
 # Extras
+
+## Known issues
+
+[☝️ Back to TOC](#table-of-contents)
+
+At the moment there are two main "issues" with the library; the first one is a QOL improvement to be done, the second one does not directly depend on the code but instead is TypeScript's fault.
+
+The first thing is the imbalance between `makeProto` and `type` in the first parameter of `makeEnum`. I do not like that `makeProto` is a function and `type` is a plain object, because this oftentimes requires functions inside `type` to specify their parameters / return value types. I'd like to uniform the two in a subsequent release, by replacing `type` with `makeType`.
+
+The second issue is that currently TypeScript is non very good at resolving `this` inside getters and setters when using `ThisType`, so when defining them in your enum prototype you might face some issues. For now, until TypeScript fixes this or I find an alternative, it might be better to only use methods inside `makeProto` (and eventually `makeType`).
 
 ## Conventions recap
 
