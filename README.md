@@ -44,10 +44,10 @@ Main topics:
 * [Adding static methods](#adding-static-methods)
 * [Using generics](#using-generics)
 
-Helpers:
+Utilities:
 
 * [Cast](#cast)
-* [cases](todo)
+* [cases](#cases)
 * [CasesOf](todo)
 
 Extra:
@@ -430,7 +430,7 @@ const Maybe = makeEnum1<MaybeHKT>({
 
 [☝️ Back to TOC](#table-of-contents)
 
-The `Cast` util type allows you to manually narrow the type of an enum to a specific case. This can be useful, for example, to create type guards.
+The `Cast` utility type allows you to manually narrow the type of an enum to a specific case. This can be useful, for example, to create type guards.
 
 ```typescript
 type Hobby =
@@ -438,9 +438,9 @@ type Hobby =
   | Case<'running', { milesPerDay: number }>
   | Case<'tv', { favoriteSeries: string }>
 
-  function isHealthyHobby(h: Hobby): h is Cast<Hobby, 'running'> {
-    return h.case === 'running'
-  }
+function isHealthyHobby(h: Hobby): h is Cast<Hobby, 'running'> {
+  return h.case === 'running'
+}
 
 const hobby = ...
 
@@ -449,6 +449,37 @@ if (isHealthyHobby(hobby)) {
   // `{ milesPerDay: number}`
   console.log(`Miles run per day: ${hobby.p.milesPerDay}!`)
 }
+```
+
+# cases
+
+[☝️ Back to TOC](#table-of-contents)
+
+The `cases` utility is a Symbol that you can use to access all the case names of an enum. It maps a case name onto itself, so it can be used to avoid hard-coding case names in some part of the code. This is useful so that when / if the name is refactored you get a compile-time error instead of a (potential) runtime error.
+
+```typescript
+type TabBarRoute =
+  | Case<'firstTab'>
+  | Case<'secondTab'>
+  | Case<'thirdTab'>
+
+const routes: YourFavoriteFrameworkRoutes = [
+  {
+    // path: 'firstTab',
+    path: TabBarRoute[cases].firstTab,
+    component: FirstTabView,
+  },
+  {
+    // path: 'secondTab',
+    path: TabBarRoute[cases].secondTab,
+    component: SecondTabView,
+  },
+  {
+    // path: 'thirdTab',
+    path: TabBarRoute[cases].thirdTab,
+    component: ThirdTabView,
+  },
+]
 ```
 
 # Conventions recap
