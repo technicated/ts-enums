@@ -1,6 +1,14 @@
-# ts-enums
+<h1 align="center">ts-enums</h1>
 
-Sum types for TypeScript!
+<p align="center">Sum types for TypeScript!</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/downloads-TBD-red" alt="downloads" height="18">
+  <img src="https://img.shields.io/badge/TypeScript-4.0%2B-blue" alt="TypeScript 4.0+" height="18">
+  <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT license" height="18">
+</p>
+
+<br>
 
 Have you ever wanted to be able to write something like this in TypeScript?
 
@@ -52,6 +60,7 @@ Utilities
 
 Extras
 
+* [Compatibility](#compatibility)
 * [Known issues](#known-issues)
 * [Conventions recap](#conventions-recap)
 * [But why do I need enums?](#but-why-do-i-need-enums)
@@ -59,6 +68,7 @@ Extras
   * [Example #2 - UI framework View Model](#example-2---ui-framework-view-model)
   * [Example #3 - Loading data](#example-3---loading-data)
 * [ts-pattern library](#ts-pattern-library)
+* [Acknowledgments](#acknowledgments)
 
 # Main topics
 
@@ -541,6 +551,14 @@ const f = extract(r, 'failure')
 ```
 
 # Extras
+
+## Compatibility
+
+[☝️ Back to TOC](#table-of-contents)
+
+Although it is built using `typescript: ^4.8`, the library should be compatible with any version of TypeScript from 4.0 upwards.
+
+The specific TypeScript development version is required solely for testing. In particular, some tests rely on the enhancements made to the `NonNullable` helper type, as explained in more detail in the [official TypeScript 4.8 release notes](https://devblogs.microsoft.com/typescript/announcing-typescript-4-8/#improved-intersection-reduction-union-compatibility-and-narrowing).
 
 ## Known issues
 
@@ -1217,3 +1235,13 @@ t.deepEqual(state, {
   ],
 })
 ```
+
+## Acknowledgments
+
+[☝️ Back to TOC](#table-of-contents)
+
+I'd like to express my gratitude to the guys at [Point-Free](https://www.pointfree.co)! Their primary focus is the Swift programming language, but a lot of the concepts they teach are not specific to the language itself and are applicable to every other programming language. They have series on functional programming concepts, Parsing, controllable Randomness, and much much more!
+
+Without their invaluable lessons, I can say without a shadow of doubt that this library would not exist; in particular, this work takes inspiration on their [Series on Algebraic Data Types](https://www.pointfree.co/collections/algebraic-data-types).
+
+I really think that I have become a better software developer thank to their teachings and work, so the least I can do is spread the word and contribute myself to the open source community!
