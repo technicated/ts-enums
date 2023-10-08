@@ -97,7 +97,7 @@ const g = Color.green() // .green is autocompleted, and g is of type `Color`
 const b = Color.blue() // .blue is autocompleted, and b is of type `Color`
 ```
 
-You can check the case of the enum value by inspecting its `case` property. You can do this whenever a boolean expression is required, and the type of the enum value will event be narrowed to the specific case in the subsequent scope (useful when you have a [payload](#adding-a-payload)):
+You can check the case of the enum value by inspecting its `case` property. You can do this whenever a boolean expression is required, and the type of the enum value will even be narrowed to the specific case in the subsequent scope (this is more useful when you have a [payload](#adding-a-payload)):
 
 ```typescript
 if (r.case === 'red') {
@@ -168,7 +168,7 @@ type WithPayload =
   | Case<'array', Person[]>
 ```
 
-You can access the payload on an instance of your enum using the `p` property. However, doing this outside of an `if` / `switch` / conditional will return a value whose type is _the union of the types of all the payloads_, since TypeScript cannot know the exact case of the enum instance.
+The payload can be any type you want, with no restrictions, and you can access it on an instance of your enum using the `p` property. However, doing this outside of an `if` / `switch` / conditional will return a value whose type is _the union of the types of all the payloads_, since TypeScript cannot know the exact case of the enum instance.
 
 ```typescript
 function makeEnumWithPayload(): WithPayload { ... }
@@ -197,12 +197,12 @@ switch (wp.case) {
     break
   case 'array':
     // `wp.p` is of type `Person[]`
-    console.log('people names are', wp.p.map(({ name }) => name).joined(', '))
+    console.log('people names are', wp.p.map(({ name }) => name).join(', '))
     break
 }
 ```
 
-One last note: a payload-less enum is not actually "empty"! It does, in fact, contain a payload of value `unit`, which is a `Symbol` representing the absence of an actual, explicit payload. This is where the `unique symbol` from earlier came from! This `unit` is a constant value and doesn't add any extra information to the enum case, so it's like it doesn't exist (refer to _product types_ for further context).
+One last note: a payload-less enum is not actually "empty"! It does, in fact, contain a payload of value `unit`, which is a `Symbol` representing the absence of an actual, explicit payload. This is where the `unique symbol` from earlier came from! This `unit` is a constant value and doesn't add any extra information to the enum case, so it's like it doesn't exist.
 
 `unit` and its type `Unit` are an implementation detail of the library and are mostly transparent to clients, but it's useful to know that the library has this little secret. The reason for its existence is to make the types of the library easier to define and deal with, in particular when creating conditional types it was easier to check for a `Unit` payload than to check if the `p` property existed or not.
 
@@ -271,7 +271,7 @@ type Animal = AnimalProto & (
 // 'Animal' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer
 const Animal = makeEnum<Animal>({
   makeProto: () => ({
-    makeChild: () => ({
+    makeChild() {
       switch (this.case) {
         case 'dog': return Animal.dog()
         case 'cat': return Animal.cat()
@@ -347,13 +347,13 @@ const Color = makeEnum<Color, ColorType>({
 })
 ```
 
-[THIS IS EXPECTED TO CHANGE IN ORDER TO UNIFORM THE TWO INTERFACES] Defining the type has not the same issue of the [prototype declaration](#adding-a-prototype): you can directly refer to the enum type in the methods definition, so TypeScript can correctly reason about your types. This is true even for generic enums, since for static methods you are forced to specify the generic parameters (this is true even for "regular" classes). 
+[THIS IS EXPECTED TO CHANGE IN ORDER TO UNIFORM THE TWO INTERFACES] Defining the type has not the same issue of the [prototype declaration](#adding-a-prototype): you can directly refer to the enum type in the methods definition, so TypeScript can correctly reason about your types. This is true even for generic enums, since for static methods you are forced to specify the generic parameters (this is true even for "regular" classes). [THIS IS TRUE BUT THEN YOU MUST REPEAT EVERY SIGNATURE TWO TIMES, WHICH CAN BE BORING]
 
 ## Using generics
 
 [☝️ Back to TOC](#table-of-contents)
 
-The most powerful abstractions come from generics, and luckily TypeScript has them! However, to correctly integrate generics with `ts-enums`, you need to do an extra step to help the compiler digest and "pass down" the information about the generic types.
+The most powerful abstractions come from generics, and luckily TypeScript has support for them! However, to correctly integrate generics with `ts-enums`, you need to do an extra step to help the compiler digest and "pass down" the information about the generic types.
 
 All the following examples will use a generic enum with a single generic parameter, but this library supports up to six of them (although I hope nobody will never need to utilize them 😅).
 
@@ -381,7 +381,7 @@ For the second difference (`HKT`), we won't delve into the nitty-gritty higher-o
 
 _<small>(*) random blabbering, see [Bruce Richardson's answer on Quora](https://www.quora.com/How-are-higher-kinded-types-different-from-type-constructors-with-parametrized-generic-types) (terminology-heavy) or [the source for my implementation of this concept](https://dev.to/effect-ts/encoding-of-hkts-in-typescript-5c3) for more information.</small>_
 
-By the way, this `HTK` stuff is only a three-liner, so I hope is not a deal breaker for adopting this library! Just faithfully define your extension of if as in the following snippet and enjoy:
+By the way, this `HTK` stuff is only a three-liner, so I hope is not a deal breaker for adopting this library! Just faithfully define your extension of `HTK<n>` as in the following snippet and enjoy:
 
 ```typescript
 // example using `HKT3`, which has three generic parameters available for your enum type
@@ -390,7 +390,7 @@ interface MyEnumHKT extends HKT3 {
 }
 ```
 
-Let's finish by implementing the prototype and a static member for our generic enum - as you will see, the process remains identical to the non-generic case:
+Now, let's finish by implementing the prototype and a static member for our generic enum - as you will see, the process remains identical to the non-generic case:
 
 ```typescript
 interface MaybeProto<T> {
@@ -410,7 +410,7 @@ interface MaybeType {
   fromValue<T>(value: T): Maybe<NonNullable<T>>
 }
 
-const Maybe = makeEnum1<MaybeHKT>({
+const Maybe = makeEnum1<MaybeHKT, MaybeType>({
   makeProto: (Maybe) => ({
     map(transform) {
       switch (this.case) {
@@ -467,6 +467,8 @@ type TabBarRoute =
   | Case<'firstTab'>
   | Case<'secondTab'>
   | Case<'thirdTab'>
+
+const TabBarRoute = makeEnum<TabBarRoute>()
 
 const routes: YourFavoriteFrameworkRoutes = [
   {
@@ -737,7 +739,7 @@ class Product {
   }
 
   reorder(): void {
-    if (this.status.case === 'inStock' && this.status.quantity > 0) {
+    if (this.status.case === 'inStock' && this.status.p.quantity > 0) {
       throw new Error('We were not out of stock!')
     }
 
@@ -747,7 +749,7 @@ class Product {
 
   restock(quantity: number): void {
     const baseQuantity = this.status.case === 'inStock'
-      ? this.status.quantity
+      ? this.status.p.quantity
       : 0
 
     this.status = Status.inStock({ quantity: baseQuantity + quantity })
@@ -760,7 +762,7 @@ class Product {
 
     switch (this.status.case) {
       case 'inStock':
-        status = Status.inStock({ quantity: this.status.quantity + quantity })
+        status = Status.inStock({ quantity: this.status.p.quantity + quantity })
         break
       case 'outOfStock':
         status = Status.inStock({ quantity })
@@ -776,8 +778,8 @@ class Product {
     // this method might be a bit more verbose than before, but its intent is clearer. Given the fact that we were forced to check `this.status`'s case, we were also able to throw a better error if we were out of stock
     
     switch (this.status.case) {
-      case 'inStock':
-        const newQuantity = this.status.quantity - quantity
+      case 'inStock': {
+        const newQuantity = this.status.p.quantity - quantity
 
         if (newQuantity < 0) {
           throw new Error('Cannot sell more than you have!')
@@ -790,6 +792,8 @@ class Product {
         }
 
         break
+      }
+
       case 'outOfStock':
         throw new Error('Cannot sell out-of-stock Product!')
     }
@@ -878,8 +882,8 @@ class ItemDetailViewModel {
   confirmItemDeletionButtonClicked(): void { ... }
   
   confirmItemEditingButtonClicked(): void {
-    if (this.presentation.case === 'editModal') {
-      this.item = this.scratchItemForEditing
+    if (this.presentation?.case === 'editModal') {
+      this.item = this.presentation.p.scratchItem
     } else {
       console.warn('Item editing confirmed while not in editing mode...')
     }
@@ -893,7 +897,7 @@ class ItemDetailViewModel {
 
   editItemButtonClicked(): void {
     this.presentation = Presentation.editModal({
-      scratchItemForEditing: deep_copy(this.item),
+      scratchItem: deep_copy(this.item),
     })
   }
 }
@@ -909,7 +913,7 @@ This example demonstrates how you can create a straightforward design for a comp
 // -- suboptimal way
 
 class DataLoader<Item> {
-  private loadPromise: Promise<item[]> | null = null
+  private loadPromise: Promise<Item[]> | null = null
 
   // how many invalid states can these variables represent?
   // error + items?
@@ -946,7 +950,8 @@ class DataLoader<Item> {
       })
     }
 
-    return this.loadPromise
+    // can make non-null assertion here, it's valid but unfortunate
+    return this.loadPromise!
   }
 }
 
@@ -971,19 +976,22 @@ class DataLoader<Item> {
 
   async performLoad(): Promise<Item[]> {
     switch (this.loadStatus.case) {
-      case 'idle':
-        const loadPromise = new Promise((resolve, reject) => {
+      case 'idle': {
+        const loadPromise = new Promise<Item[]>((resolve, reject) => {
           // load data from `this.url`
 
           if (there_was_error) {
             this.loadStatus = DataLoadingStatus.error({ error: load_error })
+            reject(load_error)
           } else {
             this.loadStatus = DataLoadingStatus.loaded(loaded_items)
+            resolve(loaded_items)
           }
         })
 
         this.loadStatus = DataLoadingStatus.loading(loadPromise)
         return loadPromise
+      }
 
       case 'loading':
         return this.loadStatus.p
