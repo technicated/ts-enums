@@ -22,8 +22,10 @@
     "transpiled",
     "typedoc",
     "untracked",
+    "casesof",
     "Proto",
-    "Quora"
+    "Quora",
+    "typeof"
   ],
   "flagWords": [],
   "ignorePaths": [

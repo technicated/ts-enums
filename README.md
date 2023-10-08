@@ -48,7 +48,7 @@ Utilities:
 
 * [Cast](#cast)
 * [cases](#cases)
-* [CasesOf](todo)
+* [CasesOf](#casesof)
 
 Extra:
 
@@ -480,6 +480,55 @@ const routes: YourFavoriteFrameworkRoutes = [
     component: ThirdTabView,
   },
 ]
+```
+
+# CasesOf
+
+[☝️ Back to TOC](#table-of-contents)
+
+The `CasesOf` utility type allows you to get a union type containing the names of all the cases of an enum. This can be useful to constrain the input or output types of your functions to only refer a specific enum cases.
+
+It's worth noting that you could achieve the same result by indexing your enum type with the `'case'` key. However, this approach becomes cumbersome with generic enums, as you must specify all the generic types even if they are not needed for this operation. This might not be a big deal, but the code will still read pretty strange.
+
+```typescript
+type Result<Success, Failure> =
+  | Case<'success', Success>
+  | Case<'failure', Failure>
+
+interface ResultHKT extends HKT2 {
+  readonly type: Result<this['_A'], this['_B']>
+}
+
+const Result = makeEnum2<ResultHKT>()
+
+function matchesCase(
+  r: Result<unknown, unknown>,
+  c: CasesOf<typeof Result>
+  // compare to:
+  // c: Result<any, any>['case']
+  // c: Result<unknown, unknown>['case']
+  // c: Result<number, User>['case']
+): boolean {
+  return r.case === c
+}
+
+const flag = matchesCase(result, 'success')
+// `flag` is `boolean`
+
+const err = matchesCase(result, 'wrong')
+// Argument of type '"wrong"' is not assignable to parameter of type
+// '"success" | "failure"'.
+
+function extract<
+  R extends Result<unknown, unknown>,
+  C extends CasesOf<typeof Result>
+>(r: R, c: C): Cast<R, C>['p'] { ... }
+
+const r: Result<number, string> = ...
+const n = extract(r, 'success')
+// `n` is `number`
+const f = extract(r, 'failure')
+// `f` is `string`
 ```
 
 # Conventions recap
