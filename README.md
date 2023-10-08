@@ -56,7 +56,8 @@ Extra:
 * [But why do I need enums?](#but-why-do-i-need-enums)
   * [Example #1 - Product item](#example-1---product-item)
   * [Example #2 - UI framework View Model](#example-2---ui-framework-view-model)
-* [ts-pattern library](todo)
+  * [Example #3 - Loading data](#example-3---loading-data)
+* [ts-pattern library](#ts-pattern-library)
 
 # Enum basics
 
@@ -625,6 +626,8 @@ I will now provide some examples of suboptimal data modeling that only uses prod
 
 [☝️ Back to TOC](#table-of-contents)
 
+This example shows that modeling properties for different states all together requires you to define default "zero" values for them, and also requires careful management of data to avoid putting the object in an invalid state. The enum version does not have this problems and also allow you to be more specific in a particular case.
+
 ```typescript
 // -- suboptimal way
 
@@ -792,6 +795,12 @@ class Product {
 
 [☝️ Back to TOC](#table-of-contents)
 
+This example illustrates that representing individual UI states using a set of separate boolean properties necessitates careful management and results in an explosion of invalid states. This is due to the fact that only one UI element can be presented at any given moment.
+
+Since only a single property should be set to `true` at a given time, having e.g. four flags representing four distinct UI elements will result in a staggering 11 invalid states out of the 16 different combinations possible!
+
+The enum version eliminates at design time the possibility of having invalid states, and also simplify the management of the presentation state.
+
 ```typescript
 // -- suboptimal way
 
@@ -888,6 +897,8 @@ class ItemDetailViewModel {
 
 [☝️ Back to TOC](#table-of-contents)
 
+This example demonstrates how you can create a straightforward design for a complex task with varying outcomes using an enum. In contrast, the pure-product version has evident issues in accurately representing all possible states, making it more challenging to correctly write and comprehend.
+
 ```typescript
 // -- suboptimal way
 
@@ -979,4 +990,18 @@ class DataLoader<Item> {
     }
   }
 }
+```
+
+# ts-pattern library
+
+[☝️ Back to TOC](#table-of-contents)
+
+This library goes very well with the [ts-pattern](https://github.com/gvergnaud/ts-pattern) library! I encourage you to explore it for yourself and see if it fits your needs.
+
+The **ts-pattern** library empowers TypeScript developers with the expressive power of pattern matching, allowing you to create concise and readable code by expressing complex conditions in a single expression. With exhaustive checking, you can be confident that no possible case is overlooked!
+
+Here's an example in which we define a nested enum and then destructure it in various flavors using the ts-pattern library!
+
+```typescript
+// todo
 ```
