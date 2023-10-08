@@ -1000,8 +1000,189 @@ This library goes very well with the [ts-pattern](https://github.com/gvergnaud/t
 
 The **ts-pattern** library empowers TypeScript developers with the expressive power of pattern matching, allowing you to create concise and readable code by expressing complex conditions in a single expression. With exhaustive checking, you can be confident that no possible case is overlooked!
 
-Here's an example in which we define a nested enum and then destructure it in various flavors using the ts-pattern library!
+Here's a (complex) example in which we define a nested enum and then destructure it in various flavors using the ts-pattern library! It's a redux-inspired reducer example, with an app that defines a list of counters that can be incremented or decremented, plus a button to request a fun fact about the current number.
 
 ```typescript
-// todo
+// Result type 
+
+type Result<Success, Failure> =
+  | Case<'success', Success>
+  | Case<'failure', Failure>
+
+interface ResultHKT extends HKT2 {
+  readonly type: Result<this['_A'], this['_B']>
+}
+
+const Result = makeEnum2<ResultHKT>()
+
+// Counter Feature
+
+interface CounterState {
+  counter: number
+  numberFact: string | null
+}
+
+type CounterAction =
+  | Case<'decrementButtonClicked'>
+  | Case<'incrementButtonClicked'>
+  | Case<'numberFactButtonClicked'>
+  | Case<'numberFactResponse', Result<string, unknown>>
+
+const CounterAction = makeEnum<CounterAction>()
+
+const counterReducer = (
+  state: CounterState,
+  action: CounterAction
+): CounterState => {
+  return match(action)
+    .with({ case: 'decrementButtonClicked' }, () => ({
+      ...state,
+      counter: state.counter - 1,
+      numberFact: null,
+    }))
+    .with({ case: 'incrementButtonClicked' }, () => ({
+      ...state,
+      counter: state.counter + 1,
+      numberFact: null,
+    }))
+    .with({ case: 'numberFactButtonClicked' }, () => ({
+      /* let's ignore how to do an API request */
+      ...state,
+      numberFact: null,
+    }))
+    .with(
+      { case: 'numberFactResponse', p: { case: 'success' } },
+      ({ p: { p: numberFact } }) => ({ ...state, numberFact })
+    )
+    .with({ case: 'numberFactResponse', p: { case: 'failure' } }, () => ({
+      /* let's ignore errors, but please don't do it in a production app! */
+      ...state,
+      numberFact: null,
+    }))
+    .exhaustive()
+}
+
+// App Feature
+
+interface AppState {
+  counters: CounterState[]
+}
+
+type AppAction =
+  | Case<'addCounterButtonClicked'>
+  | Case<'counterAction', { index: number; childAction: CounterAction }>
+  | Case<'resetCounterStateButtonClicked', { index: number }>
+
+const AppAction = makeEnum<AppAction>()
+
+const appReducer = (
+  state: AppState,
+  action: AppAction
+): AppState => {
+  return match(action)
+    .with({ case: 'addCounterButtonClicked' }, () => ({
+      ...state,
+      counters: [...state.counters, { counter: 0, numberFact: null }],
+    }))
+    .with({ case: 'counterAction' }, ({ p: { index, childAction } }) => ({
+      ...state,
+      counters: state.counters.map((c, i) =>
+        i === index ? counterReducer(c, childAction) : c
+      ),
+    }))
+    .with({ case: 'resetCounterStateButtonClicked' }, ({ p: { index } }) => ({
+      ...state,
+      counters: state.counters.map((c, i) =>
+        i === index ? { counter: 0, numberFact: null } : c
+      ),
+    }))
+    .exhaustive()
+}
+
+// testing the logic
+
+let state: AppState = { counters: [] }
+
+// first, create two counters
+state = appReducer(state, AppAction.addCounterButtonClicked())
+state = appReducer(state, AppAction.addCounterButtonClicked())
+
+t.deepEqual(state, {
+  counters: [
+    { counter: 0, numberFact: null },
+    { counter: 0, numberFact: null },
+  ],
+})
+
+// then, increment the first reducer one time and the second two times
+
+state = appReducer(
+  state,
+  AppAction.counterAction({
+    index: 0,
+    childAction: CounterAction.incrementButtonClicked(),
+  })
+)
+
+state = appReducer(
+  state,
+  AppAction.counterAction({
+    index: 1,
+    childAction: CounterAction.incrementButtonClicked(),
+  })
+)
+
+state = appReducer(
+  state,
+  AppAction.counterAction({
+    index: 1,
+    childAction: CounterAction.incrementButtonClicked(),
+  })
+)
+
+t.deepEqual(state, {
+  counters: [
+    { counter: 1, numberFact: null },
+    { counter: 2, numberFact: null },
+  ],
+})
+
+// request a number fact
+
+state = appReducer(
+  state,
+  AppAction.counterAction({
+    index: 1,
+    childAction: CounterAction.numberFactButtonClicked(),
+  })
+)
+
+state = appReducer(
+  state,
+  AppAction.counterAction({
+    index: 1,
+    childAction: CounterAction.numberFactResponse(
+      Result.success('2 is the only even prime')
+    ),
+  })
+)
+
+t.deepEqual(state, {
+  counters: [
+    { counter: 0, numberFact: null },
+    { counter: 2, numberFact: '2 is the only even prime' },
+  ],
+})
+
+state = appReducer(
+  state,
+  AppAction.resetCounterStateButtonClicked({ index: 1 })
+)
+
+t.deepEqual(state, {
+  counters: [
+    { counter: 0, numberFact: null },
+    { counter: 0, numberFact: null },
+  ],
+})
 ```
