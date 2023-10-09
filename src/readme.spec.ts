@@ -1,11 +1,12 @@
 import test from 'ava'
 import { match } from 'ts-pattern'
-import { Case, cases, Cast } from './lib/case'
+import { Case, cases, Cast, Choice } from './lib/case'
 import { HKT, HKT2 } from './lib/hkt'
 import { makeEnum } from './lib/make-enum-0/make-enum'
 import { makeEnum1 } from './lib/make-enum-1/make-enum'
 import { makeEnum2 } from './lib/make-enum-2/make-enum'
 import { CasesOf } from './lib/make-enum-2/types'
+import { unit } from './lib/unit'
 
 const console = {
   logs: [] as string[],
@@ -263,6 +264,231 @@ test('Using generics', (t) => {
   )
 })
 
+test('Plain Old JavaScript Objects', (t) => {
+  {
+    type UserStatus =
+      | Case<'active', { verificationDate: Date }>
+      | Case<'blocked', { asOfDate: Date }>
+      | Case<'notVerified'>
+
+    const UserStatus = makeEnum<UserStatus>()
+
+    interface User {
+      email: string
+      status: UserStatus
+    }
+
+    // eslint-disable-next-line no-inner-declarations
+    function registerUser(email: string): User {
+      return { email, status: UserStatus.notVerified() }
+    }
+
+    // eslint-disable-next-line no-inner-declarations
+    function verifyUser(user: User): User {
+      return {
+        ...user,
+        status: UserStatus.active({ verificationDate: new Date(1) }),
+      }
+    }
+
+    // eslint-disable-next-line no-inner-declarations
+    function blockUser(user: User): User {
+      return {
+        ...user,
+        status: UserStatus.blocked({ asOfDate: new Date(2) }),
+      }
+    }
+
+    let user = registerUser('username@email.org')
+
+    t.deepEqual(user, {
+      email: 'username@email.org',
+      status: UserStatus.notVerified(),
+    })
+
+    user = verifyUser(user)
+
+    t.deepEqual(user, {
+      email: 'username@email.org',
+      status: UserStatus.active({ verificationDate: new Date(1) }),
+    })
+
+    user = blockUser(user)
+
+    t.deepEqual(user, {
+      email: 'username@email.org',
+      status: UserStatus.blocked({ asOfDate: new Date(2) }),
+    })
+  }
+
+  {
+    type UserStatus =
+      | Case<'active', { verificationDate: Date }>
+      | Case<'blocked', { asOfDate: Date }>
+      | Case<'notVerified'>
+
+    interface User {
+      email: string
+      status: UserStatus
+    }
+
+    // eslint-disable-next-line no-inner-declarations
+    function registerUser(email: string): User {
+      return {
+        email,
+        status: { case: 'notVerified', p: unit }, // if you create instances manually, you must manually pass `unit`
+      }
+    }
+
+    // eslint-disable-next-line no-inner-declarations
+    function verifyUser(user: User): User {
+      return {
+        ...user,
+        status: { case: 'active', p: { verificationDate: new Date(1) } },
+      }
+    }
+
+    // eslint-disable-next-line no-inner-declarations
+    function blockUser(user: User): User {
+      return {
+        ...user,
+        status: { case: 'blocked', p: { asOfDate: new Date(2) } },
+      }
+    }
+
+    let user = registerUser('username@email.org')
+
+    t.deepEqual(user, {
+      email: 'username@email.org',
+      status: { case: 'notVerified', p: unit },
+    })
+
+    user = verifyUser(user)
+
+    t.deepEqual(user, {
+      email: 'username@email.org',
+      status: { case: 'active', p: { verificationDate: new Date(1) } },
+    })
+
+    user = blockUser(user)
+
+    t.deepEqual(user, {
+      email: 'username@email.org',
+      status: { case: 'blocked', p: { asOfDate: new Date(2) } },
+    })
+  }
+
+  {
+    interface User {
+      email: string
+      status:
+        | Case<'active', { verificationDate: Date }>
+        | Case<'blocked', { asOfDate: Date }>
+        | Case<'notVerified'>
+    }
+
+    // eslint-disable-next-line no-inner-declarations
+    function registerUser(email: string): User {
+      return {
+        email,
+        status: { case: 'notVerified', p: unit }, // if you create instances manually, you must manually pass `unit`
+      }
+    }
+
+    // eslint-disable-next-line no-inner-declarations
+    function verifyUser(user: User): User {
+      return {
+        ...user,
+        status: { case: 'active', p: { verificationDate: new Date(1) } },
+      }
+    }
+
+    // eslint-disable-next-line no-inner-declarations
+    function blockUser(user: User): User {
+      return {
+        ...user,
+        status: { case: 'blocked', p: { asOfDate: new Date(2) } },
+      }
+    }
+
+    let user = registerUser('username@email.org')
+
+    t.deepEqual(user, {
+      email: 'username@email.org',
+      status: { case: 'notVerified', p: unit },
+    })
+
+    user = verifyUser(user)
+
+    t.deepEqual(user, {
+      email: 'username@email.org',
+      status: { case: 'active', p: { verificationDate: new Date(1) } },
+    })
+
+    user = blockUser(user)
+
+    t.deepEqual(user, {
+      email: 'username@email.org',
+      status: { case: 'blocked', p: { asOfDate: new Date(2) } },
+    })
+  }
+
+  {
+    interface User {
+      email: string
+      status:
+        | Choice<'active', { verificationDate: Date }>
+        | Choice<'blocked', { asOfDate: Date }>
+        | Choice<'notVerified'>
+    }
+
+    // eslint-disable-next-line no-inner-declarations
+    function registerUser(email: string): User {
+      return {
+        email,
+        status: { case: 'notVerified' }, // no need to deal with `unit`
+      }
+    }
+
+    // eslint-disable-next-line no-inner-declarations
+    function verifyUser(user: User): User {
+      return {
+        ...user,
+        status: { case: 'active', p: { verificationDate: new Date(1) } },
+      }
+    }
+
+    // eslint-disable-next-line no-inner-declarations
+    function blockUser(user: User): User {
+      return {
+        ...user,
+        status: { case: 'blocked', p: { asOfDate: new Date(2) } },
+      }
+    }
+
+    let user = registerUser('username@email.org')
+
+    t.deepEqual(user, {
+      email: 'username@email.org',
+      status: { case: 'notVerified' },
+    })
+
+    user = verifyUser(user)
+
+    t.deepEqual(user, {
+      email: 'username@email.org',
+      status: { case: 'active', p: { verificationDate: new Date(1) } },
+    })
+
+    user = blockUser(user)
+
+    t.deepEqual(user, {
+      email: 'username@email.org',
+      status: { case: 'blocked', p: { asOfDate: new Date(2) } },
+    })
+  }
+})
+
 test('Utilities, Cast', (t) => {
   console.reset()
 
@@ -377,6 +603,34 @@ test('Utilities, CasesOf', (t) => {
 
   t.is(n, 42)
   t.is(f, undefined)
+})
+
+test('Utilities, Choice', (t) => {
+  {
+    type Color = Case<'red'> | Case<'green'> | Case<'blue'>
+
+    const r: Color = { case: 'red', p: unit }
+    const g: Color = { case: 'green', p: unit }
+    const b: Color = { case: 'blue', p: unit }
+
+    t.truthy(r)
+    t.truthy(g)
+    t.truthy(b)
+  }
+
+  {
+    type Color = Choice<'red'> | Choice<'green'> | Choice<'blue'>
+
+    // no need for `unit`
+    const r: Color = { case: 'red' }
+    const g: Color = { case: 'green' }
+    const b: Color = { case: 'blue' }
+
+    // no need for `unit`
+    t.truthy(r)
+    t.truthy(g)
+    t.truthy(b)
+  }
 })
 
 test('But why do I need enums?', (t) => {

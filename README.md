@@ -447,13 +447,13 @@ const Maybe = makeEnum1<MaybeHKT, MaybeType>({
 
 [☝️ Back to TOC](#table-of-contents)
 
-Sometimes, you just need to create obejct with a specific shape, without creating a class. You can use the tools of this library for this use case, too, and in different "flavours".
+Sometimes, you just need to create an object with a specific shape, without creating a class. You can use the tools of this library for this use case, too, and in different "flavours".
 
 **Option #1:** Declare a basic enum with no prototype or static methods (`type` + `const`), and use it in your POJO. Create instances using the case constructors.
 
 ```typescript
 type UserStatus =
-  | Case<'active', { vericationDate: Date }>
+  | Case<'active', { verificationDate: Date }>
   | Case<'blocked', { asOfDate: Date }>
   | Case<'notVerified'>
 
@@ -465,29 +465,29 @@ interface User {
 }
 
 function registerUser(email: string): User {
-  return { email, status: Status.notVerified() }
+  return { email, status: UserStatus.notVerified() }
 }
 
 function verifyUser(user: User): User {
   return {
     ...user,
-    status: Status.active({ verificationDate: new Date() })
+    status: UserStatus.active({ verificationDate: new Date() })
   }
 }
 
 function blockUser(user: User): User {
   return {
     ...user,
-    status: Status.blocked({ asOfDate: new Date() })
+    status: UserStatus.blocked({ asOfDate: new Date() })
   }
 }
 ```
 
-**Option #2:** Declare a basic enum with no prototype or static methods (only `type`, no `const`), and use it in your POJO. Create instances by using a literal. This is not an ideal chioice since you must directly deal with `unit`.
+**Option #2:** Declare a basic enum with no prototype or static methods (only `type`, no `const`), and use it in your POJO. Create instances by using a literal. This is not an ideal choice since you must directly deal with `unit`.
 
 ```typescript
 type UserStatus =
-  | Case<'active', { vericationDate: Date }>
+  | Case<'active', { verificationDate: Date }>
   | Case<'blocked', { asOfDate: Date }>
   | Case<'notVerified'>
 
@@ -518,13 +518,13 @@ function blockUser(user: User): User {
 }
 ```
 
-**Option #3:** Declare a basic enum inline with your type definition and create instances by using a literal. This is _still_ not an ideal chioice since you must directly deal with `unit`.
+**Option #3:** Declare a basic enum inline with your type definition and create instances by using a literal. This is _still_ not an ideal choice since you must directly deal with `unit`.
 
 ```typescript
 interface User {
   email: string
   status:
-    | Case<'active', { vericationDate: Date }>
+    | Case<'active', { verificationDate: Date }>
     | Case<'blocked', { asOfDate: Date }>
     | Case<'notVerified'>
 }
@@ -557,7 +557,7 @@ function blockUser(user: User): User {
 interface User {
   email: string
   status:
-    | Choice<'active', { vericationDate: Date }>
+    | Choice<'active', { verificationDate: Date }>
     | Choice<'blocked', { asOfDate: Date }>
     | Choice<'notVerified'>
 }
@@ -697,7 +697,28 @@ const f = extract(r, 'failure')
 
 [☝️ Back to TOC](#table-of-contents)
 
-[todo]
+The `Choice` helper type works like `Case`, but does not assign a `Unit` payload to empty cases; instead, they remain empty. This can be useful when declaring POJOs, to avoid passing needless information around.
+
+```typescript
+type Color =
+  | Case<'red'>
+  | Case<'green'>
+  | Case<'blue'>
+
+const r: Color = { case: 'red', p: unit }
+const g: Color = { case: 'green', p: unit }
+const b: Color = { case: 'blue', p: unit }
+
+type Color =
+  | Choice<'red'>
+  | Choice<'green'>
+  | Choice<'blue'>
+
+// no need for `unit`
+const r: Color = { case: 'red' }
+const g: Color = { case: 'green' }
+const b: Color = { case: 'blue' }
+```
 
 # Extras
 
