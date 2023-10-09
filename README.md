@@ -51,12 +51,14 @@ Main topics
   * [Recursive definition issue](#prototype-recursive-definition-issue)
 * [Adding static methods](#adding-static-methods)
 * [Using generics](#using-generics)
+* [Plain Old JavaScript Objects](#plain-old-javascript-objects)
 
 Utilities
 
 * [Cast](#cast)
 * [cases](#cases)
 * [CasesOf](#casesof)
+* [Choice](#choice)
 
 Extras
 
@@ -441,6 +443,147 @@ const Maybe = makeEnum1<MaybeHKT, MaybeType>({
 })
 ```
 
+## Plain Old JavaScript Objects
+
+[☝️ Back to TOC](#table-of-contents)
+
+Sometimes, you just need to create obejct with a specific shape, without creating a class. You can use the tools of this library for this use case, too, and in different "flavours".
+
+**Option #1:** Declare a basic enum with no prototype or static methods (`type` + `const`), and use it in your POJO. Create instances using the case constructors.
+
+```typescript
+type UserStatus =
+  | Case<'active', { vericationDate: Date }>
+  | Case<'blocked', { asOfDate: Date }>
+  | Case<'notVerified'>
+
+const UserStatus = makeEnum<UserStatus>()
+
+interface User {
+  email: string
+  status: UserStatus
+}
+
+function registerUser(email: string): User {
+  return { email, status: Status.notVerified() }
+}
+
+function verifyUser(user: User): User {
+  return {
+    ...user,
+    status: Status.active({ verificationDate: new Date() })
+  }
+}
+
+function blockUser(user: User): User {
+  return {
+    ...user,
+    status: Status.blocked({ asOfDate: new Date() })
+  }
+}
+```
+
+**Option #2:** Declare a basic enum with no prototype or static methods (only `type`, no `const`), and use it in your POJO. Create instances by using a literal. This is not an ideal chioice since you must directly deal with `unit`.
+
+```typescript
+type UserStatus =
+  | Case<'active', { vericationDate: Date }>
+  | Case<'blocked', { asOfDate: Date }>
+  | Case<'notVerified'>
+
+interface User {
+  email: string
+  status: UserStatus
+}
+
+function registerUser(email: string): User {
+  return {
+    email,
+    status: { case: 'notVerified', p: unit }, // if you create instances manually, you must manually pass `unit`
+  }
+}
+
+function verifyUser(user: User): User {
+  return {
+    ...user,
+    status: { case: 'active', p: { verificationDate: new Date() } }
+  }
+}
+
+function blockUser(user: User): User {
+  return {
+    ...user,
+    status: { case: 'blocked', p: { asOfDate: new Date() } }
+  }
+}
+```
+
+**Option #3:** Declare a basic enum inline with your type definition and create instances by using a literal. This is _still_ not an ideal chioice since you must directly deal with `unit`.
+
+```typescript
+interface User {
+  email: string
+  status:
+    | Case<'active', { vericationDate: Date }>
+    | Case<'blocked', { asOfDate: Date }>
+    | Case<'notVerified'>
+}
+
+function registerUser(email: string): User {
+  return {
+    email,
+    status: { case: 'notVerified', p: unit }, // if you create instances manually, you must manually pass `unit`
+  }
+}
+
+function verifyUser(user: User): User {
+  return {
+    ...user,
+    status: { case: 'active', p: { verificationDate: new Date() } }
+  }
+}
+
+function blockUser(user: User): User {
+  return {
+    ...user,
+    status: { case: 'blocked', p: { asOfDate: new Date() } }
+  }
+}
+```
+
+**Option #4:** Declare a basic enum inline with your type definition by using the helper type `Choice` instead of `Case` and create instances by using a literal. This allows you to emit `unit` for payload-less enums.
+
+```typescript
+interface User {
+  email: string
+  status:
+    | Choice<'active', { vericationDate: Date }>
+    | Choice<'blocked', { asOfDate: Date }>
+    | Choice<'notVerified'>
+}
+
+function registerUser(email: string): User {
+  return {
+    email,
+    status: { case: 'notVerified' }, // no need to deal with `unit`
+  }
+}
+
+function verifyUser(user: User): User {
+  return {
+    ...user,
+    status: { case: 'active', p: { verificationDate: new Date() } }
+  }
+}
+
+function blockUser(user: User): User {
+  return {
+    ...user,
+    status: { case: 'blocked', p: { asOfDate: new Date() } }
+  }
+}
+```
+
 # Utilities
 
 ## Cast
@@ -549,6 +692,12 @@ const n = extract(r, 'success')
 const f = extract(r, 'failure')
 // `f` is `string`
 ```
+
+## Choice
+
+[☝️ Back to TOC](#table-of-contents)
+
+[todo]
 
 # Extras
 
@@ -1240,7 +1389,7 @@ t.deepEqual(state, {
 
 [☝️ Back to TOC](#table-of-contents)
 
-I'd like to express my gratitude to the guys at [Point-Free](https://www.pointfree.co)! Their primary focus is the Swift programming language, but a lot of the concepts they teach are not specific to the language itself and are applicable to every other programming language. They have series on functional programming concepts, Parsing, controllable Randomness, and much much more!
+I'd like to express my gratitude to the guys at [Point-Free](https://www.pointfree.co)! Their primary focus is the Swift programming language, but the core concepts behind what they explain are not specific to Swift itself and are applicable to every other programming language. They have series on functional programming concepts, Parsing, controllable Randomness, and much much more!
 
 Without their invaluable lessons, I can say without a shadow of doubt that this library would not exist; in particular, this work takes inspiration on their [Series on Algebraic Data Types](https://www.pointfree.co/collections/algebraic-data-types).
 
