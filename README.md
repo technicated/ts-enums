@@ -4,7 +4,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/downloads-TBD-red" alt="downloads" height="18">
-  <img src="https://img.shields.io/badge/TypeScript-4.0%2B-blue" alt="TypeScript 4.0+" height="18">
+  <img src="https://img.shields.io/badge/compatibility-TypeScript 4.0%2B-blue" alt="TypeScript 4.0+" height="18">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT license" height="18">
 </p>
 
@@ -734,11 +734,13 @@ The specific TypeScript development version is required solely for testing. In p
 
 [☝️ Back to TOC](#table-of-contents)
 
-At the moment there are two main "issues" with the library; the first one is a QOL improvement to be done, the second one does not directly depend on the code but instead is TypeScript's fault.
+At the moment there are three main "issues" with the library.
 
-The first thing is the imbalance between `makeProto` and `type` in the first parameter of `makeEnum`. I do not like that `makeProto` is a function and `type` is a plain object, because this oftentimes requires functions inside `type` to specify their parameters / return value types. I'd like to uniform the two in a subsequent release, by replacing `type` with `makeType`.
+**Issue #1:** The types and functions in the library have no documentation attached to them, but I hope that what's written in this README is sufficient to get started!
 
-The second issue is that currently TypeScript is non very good at resolving `this` inside getters and setters when using `ThisType`, so when defining them in your enum prototype you might face some issues. For now, until TypeScript fixes this or I find an alternative, it might be better to only use methods inside `makeProto` (and eventually `makeType`).
+**Issue #2:** There is an imbalance between `makeProto` and `type` in the first parameter of the `makeEnum` function. I do not like that `makeProto` is a function and `type` is passed as a plain object, because this oftentimes requires the methods inside `type` to specify their parameters / return value types, effectively duplicating what's in the definition of `<Enum>Type`. I'd like to uniform the two in a subsequent release, by replacing `type` with `makeType`.
+
+**Issue #3:** Finally, it appears that currently TypeScript (versions 4.\*, I did not check 5.\*) is non very good at resolving `this` inside getters and setters when using `ThisType`, so when defining accessors in your enum prototype you might face some issues. For now, until TypeScript fixes this or I find an alternative approach, it might be better to only use methods inside `makeProto` (and eventually `makeType`).
 
 ## Conventions recap
 
