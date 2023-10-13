@@ -27,6 +27,12 @@ type MakeProtoFn<Enum extends EnumShape, EnumType extends object> = (
     : EnumCtors<Enum> & EnumType
 ) => ThisType<Enum> & Omit<Enum, 'case' | 'p'>
 
+type MakeTypeFn<Enum extends EnumShape, EnumType extends object> = (
+  Enum: [EnumType] extends [never]
+    ? EnumCtors<Enum>
+    : EnumCtors<Enum> & EnumType
+) => EnumType
+
 export type MakeEnumFnArgs<
   Enum extends EnumShape,
   EnumType extends object = never
@@ -38,8 +44,13 @@ export type MakeEnumFnArgs<
     : never
   : Enum & { _: unknown } extends infer _T
   ? keyof Omit<_T, 'case' | 'p'> extends '_'
-    ? [{ type: EnumType }]
-    : [{ makeProto: MakeProtoFn<Enum, EnumType>; type: EnumType }]
+    ? [{ makeType: MakeTypeFn<Enum, EnumType> }]
+    : [
+        {
+          makeProto: MakeProtoFn<Enum, EnumType>
+          makeType: MakeTypeFn<Enum, EnumType>
+        }
+      ]
   : never
 
 export type CasesOf<Ctors> = Ctors extends EnumCtors<infer Enum>

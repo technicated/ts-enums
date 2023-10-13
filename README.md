@@ -347,21 +347,19 @@ interface ColorType {
 }
 
 const Color = makeEnum<Color, ColorType>({
-  type:  {
-    random(): Color {
-      if (Math.random() > 0.3) {
+  makeType: (Color) => ({
+    random() {
+      if (random() > 0.3) {
         return Color.red() // we prefer red!
       }
 
-      return Math.random() < 0.5
-        ? Color.green()
-        : Color.blue()
-    }
-  }
+      return random() < 0.5 ? Color.green() : Color.blue()
+    },
+  }),
 })
 ```
 
-[THIS IS EXPECTED TO CHANGE IN ORDER TO UNIFORM THE TWO INTERFACES] Defining the type has not the same issue of the [prototype declaration](#adding-a-prototype): you can directly refer to the enum type in the methods definition, so TypeScript can correctly reason about your types. This is true even for generic enums, since for static methods you are forced to specify the generic parameters (this is true even for "regular" classes). [THIS IS TRUE BUT THEN YOU MUST REPEAT EVERY SIGNATURE TWO TIMES, WHICH CAN BE BORING]
+Defining the type works in the same way as [defining the prototype](#adding-a-prototype): use a function to declare it and receive a copy of the enum you are building as a parameter of the `makeType` function. As per **_convention #4_** call this symbol with the same name of the enum.
 
 ## Using generics
 

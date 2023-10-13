@@ -221,8 +221,8 @@ test('enum with proto and type', (t) => {
         }
       },
     }),
-    type: {
-      make(...args): MyEnum {
+    makeType: (MyEnum) => ({
+      make(...args) {
         switch (args.length) {
           case 0:
             return MyEnum.a()
@@ -232,7 +232,7 @@ test('enum with proto and type', (t) => {
             return MyEnum.c([args[1], args[0]])
         }
       },
-    },
+    }),
   })
 
   const performCheck = makePerformEqualityCheck(t, MyEnum, (v, number) => {
@@ -289,8 +289,8 @@ test('property owning with proto and type', (t) => {
         }
       },
     }),
-    type: {
-      make(...args): MyEnum {
+    makeType: (MyEnum) => ({
+      make(...args) {
         switch (args.length) {
           case 0:
             return MyEnum.a()
@@ -300,7 +300,7 @@ test('property owning with proto and type', (t) => {
             return MyEnum.c([args[1], args[0]])
         }
       },
-    },
+    }),
   })
 
   const performCheck = makePerformOwnershipCheck(t, (v) => {
@@ -331,8 +331,8 @@ test('enum with type', (t) => {
     | Case<'c', [string, number]>
 
   const MyEnum = makeEnum<MyEnum, MyEnumType>({
-    type: {
-      make(...args): MyEnum {
+    makeType: (MyEnum) => ({
+      make(...args) {
         switch (args.length) {
           case 0:
             return MyEnum.a()
@@ -342,7 +342,7 @@ test('enum with type', (t) => {
             return MyEnum.c([args[1], args[0]])
         }
       },
-    },
+    }),
   })
 
   const performCheck = makePerformEqualityCheck(t, MyEnum)
@@ -377,8 +377,8 @@ test('property owning with type', (t) => {
     | Case<'c', [string, number]>
 
   const MyEnum = makeEnum<MyEnum, MyEnumType>({
-    type: {
-      make(...args): MyEnum {
+    makeType: (MyEnum) => ({
+      make(...args) {
         switch (args.length) {
           case 0:
             return MyEnum.a()
@@ -388,7 +388,7 @@ test('property owning with type', (t) => {
             return MyEnum.c([args[1], args[0]])
         }
       },
-    },
+    }),
   })
 
   const performCheck = makePerformOwnershipCheck(t)
