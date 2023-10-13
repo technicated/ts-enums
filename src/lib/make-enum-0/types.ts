@@ -1,45 +1,47 @@
-import { cases } from '../case'
-import { Incr } from '../type-arithmetic'
+import { EnumShape as BaseEnumShape, cases, Cast } from '../case'
+import { Unit } from '../unit'
 
-export type EnumShape = { readonly case: string }
-export type ProtoShape = object
-
-type RecursiveCtorArgs<
-  Obj extends object,
-  Index extends number = 0
-> = Obj extends Record<Index, infer V>
-  ? [V, ...RecursiveCtorArgs<Omit<Obj, Index>, Incr<Index>>]
-  : []
-
-type EnumCtorArgs<
-  Enum extends EnumShape,
-  Case extends Enum['case'],
-  Proto extends ProtoShape
-> = Enum & { _: unknown; case: Case } extends infer _T
-  ? keyof Omit<_T, 'case' | keyof Proto> extends keyof { _: unknown }
-    ? []
-    : 0 extends keyof Omit<_T, 'case' | '_' | keyof Proto>
-    ? [RecursiveCtorArgs<Omit<_T, 'case'>>]
-    : Record<string, never> extends Omit<_T, 'case' | '_' | keyof Proto>
-    ? Partial<[Omit<_T, 'case' | '_' | keyof Proto>]>
-    : [Omit<_T, 'case' | '_' | keyof Proto>]
-  : never
+export type EnumShape = BaseEnumShape
 
 type CasesOfEnum<Enum extends EnumShape> = {
   [Case in Enum['case']]: Case
 }
 
-export type CasesOf<EnumType> = EnumType extends EnumCtors<
-  infer Enum,
-  ProtoShape
->
-  ? keyof CasesOfEnum<Enum>
-  : never
+// this is like this for consistency with generic variants
+type EnumCtorArgs<Enum extends EnumShape, Case extends Enum['case']> = [
+  Cast<Enum, Case>['p']
+]
 
-export type EnumCtors<Enum extends EnumShape, Proto extends ProtoShape> = {
-  [Case in Enum['case']]: (...args: EnumCtorArgs<Enum, Case, Proto>) => Enum
+export type EnumCtors<Enum extends EnumShape> = {
+  [Case in Enum['case']]: (
+    // this is like this for consistency with generic variants
+    ...args: Cast<Enum, Case>['p'] extends Unit
+      ? Partial<EnumCtorArgs<Enum, Case>>
+      : EnumCtorArgs<Enum, Case>
+  ) => Enum
 } & Record<typeof cases, CasesOfEnum<Enum>>
 
-export type MakeProtoFn<Enum extends EnumShape, Proto extends ProtoShape> = (
-  e: EnumCtors<Enum, Proto>
-) => Proto & ThisType<Enum>
+type MakeProtoFn<Enum extends EnumShape, EnumType extends object> = (
+  Enum: [EnumType] extends [never]
+    ? EnumCtors<Enum>
+    : EnumCtors<Enum> & EnumType
+) => ThisType<Enum> & Omit<Enum, 'case' | 'p'>
+
+export type MakeEnumFnArgs<
+  Enum extends EnumShape,
+  EnumType extends object = never
+> = [EnumType] extends [never]
+  ? Enum & { _: unknown } extends infer _T
+    ? keyof Omit<_T, 'case' | 'p'> extends '_'
+      ? []
+      : [{ makeProto: MakeProtoFn<Enum, EnumType> }]
+    : never
+  : Enum & { _: unknown } extends infer _T
+  ? keyof Omit<_T, 'case' | 'p'> extends '_'
+    ? [{ type: EnumType }]
+    : [{ makeProto: MakeProtoFn<Enum, EnumType>; type: EnumType }]
+  : never
+
+export type CasesOf<Ctors> = Ctors extends EnumCtors<infer Enum>
+  ? Enum['case']
+  : never

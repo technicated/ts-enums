@@ -1,8 +1,48 @@
-import test from 'ava'
+import test, { ExecutionContext } from 'ava'
 import { Case, cases } from '../case'
 import { HKT6 } from '../hkt'
+import { unit, Unit } from '../unit'
 import { makeEnum6 } from './make-enum'
-import { CasesOf } from './types'
+import { CasesOf, EnumCtors, EnumShape } from './types'
+
+type FullPayload = Unit | Partial<Record<0 | 1 | 2 | 3 | 4 | 5, unknown>>
+
+interface MakePerformEqualityCheckFn {
+  <Enum extends EnumShape, Args extends unknown[]>(
+    t: ExecutionContext<unknown>,
+    enumCtors: EnumCtors<Enum>,
+    extra?: (v: Enum['type'], ...args: Args) => void
+  ): (
+    v: Enum['type'] & { p: FullPayload },
+    c: CasesOf<EnumCtors<Enum>>,
+    payload: Exclude<FullPayload, Unit>,
+    ...args: Args
+  ) => void
+}
+
+const makePerformEqualityCheck: MakePerformEqualityCheckFn = (
+  t,
+  enumCtors,
+  extra
+) => {
+  return (v, c, payload, ...args): void => {
+    t.false(Object.getOwnPropertyDescriptor(v, 'case')?.writable)
+    t.is(v.case, c)
+    t.is(enumCtors[cases][c], c)
+
+    if (v.p !== unit) {
+      t.deepEqual(v.p[0], payload[0])
+      t.deepEqual(v.p[1], payload[1])
+      t.deepEqual(v.p[2], payload[2])
+      t.deepEqual(v.p[3], payload[3])
+      t.deepEqual(v.p[4], payload[4])
+      t.deepEqual(v.p[5], payload[5])
+    }
+
+    t.true(!!extra || args.length === 0)
+    extra?.(v, ...args)
+  }
+}
 
 test('basic enum', (t) => {
   type MyEnum<A, B, C, D, E, F> =
@@ -27,68 +67,33 @@ test('basic enum', (t) => {
 
   const MyEnum = makeEnum6<MyEnumHKT>()
 
-  type Helper = MyEnum<unknown, unknown, unknown, unknown, unknown, unknown> &
-    Record<0 | 1 | 2 | 3 | 4 | 5, unknown>
+  const performCheck = makePerformEqualityCheck(t, MyEnum)
 
-  const performCheck = (
-    v: Helper,
-    c: CasesOf<typeof MyEnum>,
-    payload: Partial<[unknown, unknown, unknown, unknown, unknown, unknown]>
-  ): void => {
-    t.false(Object.getOwnPropertyDescriptor(v, 'case')?.writable)
-    t.is(v.case, c)
-    t.is(MyEnum[cases][c], c)
-    t.deepEqual(v[0], payload[0])
-    t.deepEqual(v[1], payload[1])
-    t.deepEqual(v[2], payload[2])
-    t.deepEqual(v[3], payload[3])
-    t.deepEqual(v[4], payload[4])
-    t.deepEqual(v[5], payload[5])
-  }
+  const empty = MyEnum.empty()
+  performCheck(empty, 'empty', {})
 
-  const empty = MyEnum.empty() as Helper
-  performCheck(empty, 'empty', [])
-
-  const a = MyEnum.a([1]) as Helper
+  const a = MyEnum.a([1])
   performCheck(a, 'a', [1])
 
-  const b = MyEnum.b([2, 'hello']) as Helper
+  const b = MyEnum.b([2, 'hello'])
   performCheck(b, 'b', [2, 'hello'])
 
-  const c = MyEnum.c(['hello', 3, 'world']) as Helper
+  const c = MyEnum.c(['hello', 3, 'world'])
   performCheck(c, 'c', ['hello', 3, 'world'])
 
-  const d = MyEnum.d(['hello', 3, 'world', true]) as Helper
+  const d = MyEnum.d(['hello', 3, 'world', true])
   performCheck(d, 'd', ['hello', 3, 'world', true])
 
-  const e = MyEnum.e(['hello', 3, 'world', true, 'foo']) as Helper
+  const e = MyEnum.e(['hello', 3, 'world', true, 'foo'])
   performCheck(e, 'e', ['hello', 3, 'world', true, 'foo'])
 
-  const f = MyEnum.f([
-    'hello',
-    3,
-    'world',
-    true,
-    'foo',
-    { name: 'User' },
-  ]) as Helper
+  const f = MyEnum.f(['hello', 3, 'world', true, 'foo', { name: 'User' }])
   performCheck(f, 'f', ['hello', 3, 'world', true, 'foo', { name: 'User' }])
 })
 
 test('enum with proto', (t) => {
   interface MyEnumProto<A, B, C, D, E, F> {
     prev(): MyEnum<A, B, C, D, E, F>
-  }
-
-  interface MyEnumProtoHKT extends HKT6 {
-    readonly type: MyEnumProto<
-      this['_A'],
-      this['_B'],
-      this['_C'],
-      this['_D'],
-      this['_E'],
-      this['_F']
-    >
   }
 
   type MyEnum<A, B, C, D, E, F> = MyEnumProto<A, B, C, D, E, F> &
@@ -113,61 +118,52 @@ test('enum with proto', (t) => {
     >
   }
 
-  const MyEnum = makeEnum6<MyEnumHKT, MyEnumProtoHKT>((MyEnum) => ({
-    prev() {
-      switch (this.case) {
-        case 'empty':
-          return MyEnum.empty()
-        case 'a':
-          return MyEnum.empty()
-        case 'b':
-          return MyEnum.a([this[0]])
-        case 'c':
-          return MyEnum.b([this[0], this[1]])
-        case 'd':
-          return MyEnum.c([this[0], this[1], this[2]])
-        case 'e':
-          return MyEnum.d([this[0], this[1], this[2], this[3]])
-        case 'f':
-          return MyEnum.e([this[0], this[1], this[2], this[3], this[4]])
-      }
-    },
-  }))
+  const MyEnum = makeEnum6<MyEnumHKT>({
+    makeProto: (MyEnum) => ({
+      prev() {
+        switch (this.case) {
+          case 'empty':
+            return MyEnum.empty()
+          case 'a':
+            return MyEnum.empty()
+          case 'b':
+            return MyEnum.a([this.p[0]])
+          case 'c':
+            return MyEnum.b([this.p[0], this.p[1]])
+          case 'd':
+            return MyEnum.c([this.p[0], this.p[1], this.p[2]])
+          case 'e':
+            return MyEnum.d([this.p[0], this.p[1], this.p[2], this.p[3]])
+          case 'f':
+            return MyEnum.e([
+              this.p[0],
+              this.p[1],
+              this.p[2],
+              this.p[3],
+              this.p[4],
+            ])
+        }
+      },
+    }),
+  })
 
-  type Helper = MyEnum<unknown, unknown, unknown, unknown, unknown, unknown> &
-    Record<0 | 1 | 2 | 3 | 4 | 5, unknown>
-
-  const performCheck = (
-    v: Helper,
-    c: CasesOf<typeof MyEnum>,
-    payload: Partial<[unknown, unknown, unknown, unknown, unknown, unknown]>,
-    prev: unknown
-  ): void => {
-    t.false(Object.getOwnPropertyDescriptor(v, 'case')?.writable)
-    t.is(v.case, c)
-    t.is(MyEnum[cases][c], c)
-    t.deepEqual(v[0], payload[0])
-    t.deepEqual(v[1], payload[1])
-    t.deepEqual(v[2], payload[2])
-    t.deepEqual(v[3], payload[3])
-    t.deepEqual(v[4], payload[4])
-    t.deepEqual(v[5], payload[5])
+  const performCheck = makePerformEqualityCheck(t, MyEnum, (v, prev) => {
     t.deepEqual(v.prev(), prev)
-  }
+  })
 
-  const empty = MyEnum.empty() as Helper
-  performCheck(empty, 'empty', [], MyEnum.empty())
+  const empty = MyEnum.empty()
+  performCheck(empty, 'empty', {}, MyEnum.empty())
 
-  const a = MyEnum.a([1]) as Helper
+  const a = MyEnum.a([1])
   performCheck(a, 'a', [1], MyEnum.empty())
 
-  const b = MyEnum.b([2, 'hello']) as Helper
+  const b = MyEnum.b([2, 'hello'])
   performCheck(b, 'b', [2, 'hello'], MyEnum.a([2]))
 
-  const c = MyEnum.c(['hello', 3, 'world']) as Helper
+  const c = MyEnum.c(['hello', 3, 'world'])
   performCheck(c, 'c', ['hello', 3, 'world'], MyEnum.b(['hello', 3]))
 
-  const d = MyEnum.d(['hello', 3, 'world', true]) as Helper
+  const d = MyEnum.d(['hello', 3, 'world', true])
   performCheck(
     d,
     'd',
@@ -175,7 +171,7 @@ test('enum with proto', (t) => {
     MyEnum.c(['hello', 3, 'world'])
   )
 
-  const e = MyEnum.e(['hello', 3, 'world', true, 'foo']) as Helper
+  const e = MyEnum.e(['hello', 3, 'world', true, 'foo'])
   performCheck(
     e,
     'e',
@@ -183,14 +179,7 @@ test('enum with proto', (t) => {
     MyEnum.d(['hello', 3, 'world', true])
   )
 
-  const f = MyEnum.f([
-    'hello',
-    3,
-    'world',
-    true,
-    'foo',
-    { name: 'User' },
-  ]) as Helper
+  const f = MyEnum.f(['hello', 3, 'world', true, 'foo', { name: 'User' }])
   performCheck(
     f,
     'f',
@@ -202,17 +191,6 @@ test('enum with proto', (t) => {
 test('enum with proto and type', (t) => {
   interface MyEnumProto<A, B, C, D, E, F> {
     prev(): MyEnum<A, B, C, D, E, F>
-  }
-
-  interface MyEnumProtoHKT extends HKT6 {
-    readonly type: MyEnumProto<
-      this['_A'],
-      this['_B'],
-      this['_C'],
-      this['_D'],
-      this['_E'],
-      this['_F']
-    >
   }
 
   type MyEnum<A, B, C, D, E, F> = MyEnumProto<A, B, C, D, E, F> &
@@ -250,8 +228,8 @@ test('enum with proto and type', (t) => {
     ): MyEnum<A, B, C, D, E, F>
   }
 
-  const MyEnum = makeEnum6<MyEnumHKT, MyEnumProtoHKT, MyEnumType>(
-    (MyEnum) => ({
+  const MyEnum = makeEnum6<MyEnumHKT, MyEnumType>({
+    makeProto: (MyEnum) => ({
       prev() {
         switch (this.case) {
           case 'empty':
@@ -259,19 +237,25 @@ test('enum with proto and type', (t) => {
           case 'a':
             return MyEnum.empty()
           case 'b':
-            return MyEnum.a([this[0]])
+            return MyEnum.a([this.p[0]])
           case 'c':
-            return MyEnum.b([this[0], this[1]])
+            return MyEnum.b([this.p[0], this.p[1]])
           case 'd':
-            return MyEnum.c([this[0], this[1], this[2]])
+            return MyEnum.c([this.p[0], this.p[1], this.p[2]])
           case 'e':
-            return MyEnum.d([this[0], this[1], this[2], this[3]])
+            return MyEnum.d([this.p[0], this.p[1], this.p[2], this.p[3]])
           case 'f':
-            return MyEnum.e([this[0], this[1], this[2], this[3], this[4]])
+            return MyEnum.e([
+              this.p[0],
+              this.p[1],
+              this.p[2],
+              this.p[3],
+              this.p[4],
+            ])
         }
       },
     }),
-    {
+    type: {
       make<A, B, C, D, E, F>(
         ...args:
           | []
@@ -299,43 +283,26 @@ test('enum with proto and type', (t) => {
             return MyEnum.f(args)
         }
       },
-    }
-  )
+    },
+  })
 
-  type Helper = MyEnum<unknown, unknown, unknown, unknown, unknown, unknown> &
-    Record<0 | 1 | 2 | 3 | 4 | 5, unknown>
-
-  const performCheck = (
-    v: Helper,
-    c: CasesOf<typeof MyEnum>,
-    payload: Partial<[unknown, unknown, unknown, unknown, unknown, unknown]>,
-    prev: unknown
-  ): void => {
-    t.false(Object.getOwnPropertyDescriptor(v, 'case')?.writable)
-    t.is(v.case, c)
-    t.is(MyEnum[cases][c], c)
-    t.deepEqual(v[0], payload[0])
-    t.deepEqual(v[1], payload[1])
-    t.deepEqual(v[2], payload[2])
-    t.deepEqual(v[3], payload[3])
-    t.deepEqual(v[4], payload[4])
-    t.deepEqual(v[5], payload[5])
+  const performCheck = makePerformEqualityCheck(t, MyEnum, (v, prev) => {
     t.deepEqual(v.prev(), prev)
-  }
+  })
 
-  const empty = MyEnum.empty() as Helper
-  performCheck(empty, 'empty', [], MyEnum.empty())
+  const empty = MyEnum.empty()
+  performCheck(empty, 'empty', {}, MyEnum.empty())
 
-  const a = MyEnum.a([1]) as Helper
+  const a = MyEnum.a([1])
   performCheck(a, 'a', [1], MyEnum.empty())
 
-  const b = MyEnum.b([2, 'hello']) as Helper
+  const b = MyEnum.b([2, 'hello'])
   performCheck(b, 'b', [2, 'hello'], MyEnum.a([2]))
 
-  const c = MyEnum.c(['hello', 3, 'world']) as Helper
+  const c = MyEnum.c(['hello', 3, 'world'])
   performCheck(c, 'c', ['hello', 3, 'world'], MyEnum.b(['hello', 3]))
 
-  const d = MyEnum.d(['hello', 3, 'world', true]) as Helper
+  const d = MyEnum.d(['hello', 3, 'world', true])
   performCheck(
     d,
     'd',
@@ -343,7 +310,7 @@ test('enum with proto and type', (t) => {
     MyEnum.c(['hello', 3, 'world'])
   )
 
-  const e = MyEnum.e(['hello', 3, 'world', true, 'foo']) as Helper
+  const e = MyEnum.e(['hello', 3, 'world', true, 'foo'])
   performCheck(
     e,
     'e',
@@ -351,14 +318,7 @@ test('enum with proto and type', (t) => {
     MyEnum.d(['hello', 3, 'world', true])
   )
 
-  const f = MyEnum.f([
-    'hello',
-    3,
-    'world',
-    true,
-    'foo',
-    { name: 'User' },
-  ]) as Helper
+  const f = MyEnum.f(['hello', 3, 'world', true, 'foo', { name: 'User' }])
   performCheck(
     f,
     'f',
@@ -366,19 +326,19 @@ test('enum with proto and type', (t) => {
     MyEnum.e(['hello', 3, 'world', true, 'foo'])
   )
 
-  const make_empty = MyEnum.make() as Helper
-  performCheck(make_empty, 'empty', [], MyEnum.empty())
+  const make_empty = MyEnum.make()
+  performCheck(make_empty, 'empty', {}, MyEnum.empty())
 
-  const make_a = MyEnum.make(1) as Helper
+  const make_a = MyEnum.make(1)
   performCheck(make_a, 'a', [1], MyEnum.empty())
 
-  const make_b = MyEnum.make(2, 'hello') as Helper
+  const make_b = MyEnum.make(2, 'hello')
   performCheck(make_b, 'b', [2, 'hello'], MyEnum.a([2]))
 
-  const make_c = MyEnum.make('hello', 3, 'world') as Helper
+  const make_c = MyEnum.make('hello', 3, 'world')
   performCheck(make_c, 'c', ['hello', 3, 'world'], MyEnum.b(['hello', 3]))
 
-  const make_d = MyEnum.make('hello', 3, 'world', false) as Helper
+  const make_d = MyEnum.make('hello', 3, 'world', false)
   performCheck(
     make_d,
     'd',
@@ -386,7 +346,7 @@ test('enum with proto and type', (t) => {
     MyEnum.c(['hello', 3, 'world'])
   )
 
-  const make_e = MyEnum.make('hello', 3, 'world', false, 'foo') as Helper
+  const make_e = MyEnum.make('hello', 3, 'world', false, 'foo')
   performCheck(
     make_e,
     'e',
@@ -396,7 +356,7 @@ test('enum with proto and type', (t) => {
 
   const make_f = MyEnum.make('hello', 3, 'world', false, 'foo', {
     name: 'User',
-  }) as Helper
+  })
   performCheck(
     make_f,
     'f',
@@ -440,103 +400,81 @@ test('enum with type', (t) => {
   }
 
   const MyEnum = makeEnum6<MyEnumHKT, MyEnumType>({
-    make<A, B, C, D, E, F>(
-      ...args:
-        | []
-        | [A]
-        | [A, B]
-        | [A, B, C]
-        | [A, B, C, D]
-        | [A, B, C, D, E]
-        | [A, B, C, D, E, F]
-    ): MyEnum<A, B, C, D, E, F> {
-      switch (args.length) {
-        case 0:
-          return MyEnum.empty()
-        case 1:
-          return MyEnum.a(args)
-        case 2:
-          return MyEnum.b(args)
-        case 3:
-          return MyEnum.c(args)
-        case 4:
-          return MyEnum.d(args)
-        case 5:
-          return MyEnum.e(args)
-        case 6:
-          return MyEnum.f(args)
-      }
+    type: {
+      make<A, B, C, D, E, F>(
+        ...args:
+          | []
+          | [A]
+          | [A, B]
+          | [A, B, C]
+          | [A, B, C, D]
+          | [A, B, C, D, E]
+          | [A, B, C, D, E, F]
+      ): MyEnum<A, B, C, D, E, F> {
+        switch (args.length) {
+          case 0:
+            return MyEnum.empty()
+          case 1:
+            return MyEnum.a(args)
+          case 2:
+            return MyEnum.b(args)
+          case 3:
+            return MyEnum.c(args)
+          case 4:
+            return MyEnum.d(args)
+          case 5:
+            return MyEnum.e(args)
+          case 6:
+            return MyEnum.f(args)
+        }
+      },
     },
   })
 
-  type Helper = MyEnum<unknown, unknown, unknown, unknown, unknown, unknown> &
-    Record<0 | 1 | 2 | 3 | 4 | 5, unknown>
+  const performCheck = makePerformEqualityCheck(t, MyEnum)
 
-  const performCheck = (
-    v: Helper,
-    c: CasesOf<typeof MyEnum>,
-    payload: Partial<[unknown, unknown, unknown, unknown, unknown, unknown]>
-  ): void => {
-    t.false(Object.getOwnPropertyDescriptor(v, 'case')?.writable)
-    t.is(v.case, c)
-    t.is(MyEnum[cases][c], c)
-    t.deepEqual(v[0], payload[0])
-    t.deepEqual(v[1], payload[1])
-    t.deepEqual(v[2], payload[2])
-    t.deepEqual(v[3], payload[3])
-    t.deepEqual(v[4], payload[4])
-    t.deepEqual(v[5], payload[5])
-  }
+  const empty = MyEnum.empty()
+  performCheck(empty, 'empty', {})
 
-  const empty = MyEnum.empty() as Helper
-  performCheck(empty, 'empty', [])
-
-  const a = MyEnum.a([1]) as Helper
+  const a = MyEnum.a([1])
   performCheck(a, 'a', [1])
 
-  const b = MyEnum.b([2, 'hello']) as Helper
+  const b = MyEnum.b([2, 'hello'])
   performCheck(b, 'b', [2, 'hello'])
 
-  const c = MyEnum.c(['hello', 3, 'world']) as Helper
+  const c = MyEnum.c(['hello', 3, 'world'])
   performCheck(c, 'c', ['hello', 3, 'world'])
 
-  const d = MyEnum.d(['hello', 3, 'world', true]) as Helper
+  const d = MyEnum.d(['hello', 3, 'world', true])
   performCheck(d, 'd', ['hello', 3, 'world', true])
 
-  const e = MyEnum.e(['hello', 3, 'world', true, 'foo']) as Helper
+  const e = MyEnum.e(['hello', 3, 'world', true, 'foo'])
   performCheck(e, 'e', ['hello', 3, 'world', true, 'foo'])
 
-  const f = MyEnum.f([
-    'hello',
-    3,
-    'world',
-    true,
-    'foo',
-    { name: 'User' },
-  ]) as Helper
+  const f = MyEnum.f(['hello', 3, 'world', true, 'foo', { name: 'User' }])
   performCheck(f, 'f', ['hello', 3, 'world', true, 'foo', { name: 'User' }])
 
-  const make_empty = MyEnum.make() as Helper
-  performCheck(make_empty, 'empty', [])
+  const make_empty = MyEnum.make()
+  performCheck(make_empty, 'empty', {})
 
-  const make_a = MyEnum.make(1) as Helper
+  const make_a = MyEnum.make(1)
   performCheck(make_a, 'a', [1])
 
-  const make_b = MyEnum.make(2, 'hello') as Helper
+  const make_b = MyEnum.make(2, 'hello')
   performCheck(make_b, 'b', [2, 'hello'])
 
-  const make_c = MyEnum.make('hello', 3, 'world') as Helper
+  const make_c = MyEnum.make('hello', 3, 'world')
   performCheck(make_c, 'c', ['hello', 3, 'world'])
 
-  const make_d = MyEnum.make('hello', 3, 'world', false) as Helper
+  const make_d = MyEnum.make('hello', 3, 'world', false)
   performCheck(make_d, 'd', ['hello', 3, 'world', false])
 
-  const make_e = MyEnum.make('hello', 3, 'world', false, 'foo') as Helper
+  const make_e = MyEnum.make('hello', 3, 'world', false, 'foo')
   performCheck(make_e, 'e', ['hello', 3, 'world', false, 'foo'])
 
   const make_f = MyEnum.make('hello', 3, 'world', false, 'foo', {
     name: 'User',
-  }) as Helper
+  })
   performCheck(make_f, 'f', [
     'hello',
     3,
@@ -547,13 +485,14 @@ test('enum with type', (t) => {
   ])
 })
 
-test('fully optional object payload', (t) => {
-  type MyEnum<A, B, C, D, E, F> =
-    | Case<'main', { a?: A; b?: B; c?: C; d?: D; e?: E; f?: F }>
-    | Case<'other'>
+test('nested enums', (t) => {
+  type Color<A, B, C, D, E, F> =
+    | Case<'red', A | B | C | D | E | F>
+    | Case<'green', [A, B, C, D, E, F]>
+    | Case<'blue', { a: A; b: B; c: C; d: D; e: E; f: F }>
 
-  interface MyEnumHKT extends HKT6 {
-    readonly type: MyEnum<
+  interface ColorHKT extends HKT6 {
+    readonly type: Color<
       this['_A'],
       this['_B'],
       this['_C'],
@@ -563,62 +502,163 @@ test('fully optional object payload', (t) => {
     >
   }
 
-  const MyEnum = makeEnum6<MyEnumHKT>()
+  const Color = makeEnum6<ColorHKT>()
 
-  type Helper = MyEnum<unknown, unknown, unknown, unknown, unknown, unknown> &
-    Record<'a' | 'b' | 'c' | 'd' | 'e' | 'f', unknown>
+  type Wrapper<A, B, C, D, E, F> =
+    | Case<'none'>
+    | Case<'some', Color<A, B, C, D, E, F>>
 
-  const performCheck = (
-    v: Helper,
-    c: CasesOf<typeof MyEnum>,
-    payload: Partial<Record<'a' | 'b' | 'c' | 'd' | 'e' | 'f', unknown>>
-  ): void => {
-    t.false(Object.getOwnPropertyDescriptor(v, 'case')?.writable)
-    t.is(v.case, c)
-    t.is(MyEnum[cases][c], c)
-    t.deepEqual(v.a, payload.a)
-    t.deepEqual(v.b, payload.b)
-    t.deepEqual(v.c, payload.c)
-    t.deepEqual(v.d, payload.d)
-    t.deepEqual(v.e, payload.e)
-    t.deepEqual(v.f, payload.f)
+  interface WrapperHKT extends HKT6 {
+    readonly type: Wrapper<
+      this['_A'],
+      this['_B'],
+      this['_C'],
+      this['_D'],
+      this['_E'],
+      this['_F']
+    >
   }
 
-  const main = MyEnum.main() as Helper
-  performCheck(main, 'main', {})
+  const Wrapper = makeEnum6<WrapperHKT>()
 
-  const main_a = MyEnum.main({ a: 'hello' }) as Helper
-  performCheck(main_a, 'main', { a: 'hello' })
-
-  const main_b = MyEnum.main({ b: 2 }) as Helper
-  performCheck(main_b, 'main', { b: 2 })
-
-  const main_c = MyEnum.main({ c: 'hello' }) as Helper
-  performCheck(main_c, 'main', { c: 'hello' })
-
-  const main_d = MyEnum.main({ d: true }) as Helper
-  performCheck(main_d, 'main', { d: true })
-
-  const main_e = MyEnum.main({ e: false }) as Helper
-  performCheck(main_e, 'main', { e: false })
-
-  const main_f = MyEnum.main({ f: { name: 'User' } }) as Helper
-  performCheck(main_f, 'main', { f: { name: 'User' } })
-
-  const main_all = MyEnum.main({
-    a: 2,
-    b: 'hello',
-    c: 'world',
-    d: true,
-    e: false,
-    f: { name: 'User' },
-  }) as Helper
-  performCheck(main_all, 'main', {
-    a: 2,
-    b: 'hello',
-    c: 'world',
-    d: true,
-    e: false,
-    f: { name: 'User' },
+  t.deepEqual(Wrapper.some(Color.red(1)), {
+    case: 'some',
+    p: { case: 'red', p: 1 },
   })
+
+  t.deepEqual(Wrapper.some(Color.green([1, 2, 3, 4, 5, 6])), {
+    case: 'some',
+    p: { case: 'green', p: [1, 2, 3, 4, 5, 6] },
+  })
+
+  t.deepEqual(
+    Wrapper.some(
+      Color.blue({
+        a: 'hello',
+        b: 3,
+        c: 'world',
+        d: true,
+        e: 'foo',
+        f: { name: 'User' },
+      })
+    ),
+    {
+      case: 'some',
+      p: {
+        case: 'blue',
+        p: {
+          a: 'hello',
+          b: 3,
+          c: 'world',
+          d: true,
+          e: 'foo',
+          f: { name: 'User' },
+        },
+      },
+    }
+  )
+})
+
+test('weird generics', (t) => {
+  interface MaybeProto<A, B, C, D, E, F> {
+    map<U, V, W, X, Y, Z>(
+      tx_a: (value: A) => U,
+      tx_b: (value: B) => V,
+      tx_c: (value: C) => W,
+      tx_d: (value: D) => X,
+      tx_e: (value: E) => Y,
+      tx_f: (value: F) => Z
+    ): Maybe<U, V, W, X, Y, Z>
+  }
+
+  type Maybe<A, B, C, D, E, F> = MaybeProto<A, B, C, D, E, F> &
+    (
+      | Case<'none'>
+      | Case<'someA', A>
+      | Case<'someB', B>
+      | Case<'someC', C>
+      | Case<'someD', D>
+      | Case<'someE', E>
+      | Case<'someF', F>
+    )
+
+  interface MaybeHKT extends HKT6 {
+    readonly type: Maybe<
+      this['_A'],
+      this['_B'],
+      this['_C'],
+      this['_D'],
+      this['_E'],
+      this['_F']
+    >
+  }
+
+  interface MaybeType {
+    fromValues<A, B, C, D, E, F>(
+      values?: { a: A } | { b: B } | { c: C } | { d: D } | { e: E } | { f: F }
+    ): Maybe<
+      NonNullable<A>,
+      NonNullable<B>,
+      NonNullable<C>,
+      NonNullable<D>,
+      NonNullable<E>,
+      NonNullable<F>
+    >
+  }
+
+  const Maybe = makeEnum6<MaybeHKT, MaybeType>({
+    makeProto: (Maybe) => ({
+      map(tx_a, tx_b, tx_c, tx_d, tx_e, tx_f) {
+        switch (this.case) {
+          case 'none':
+            return Maybe.none()
+          case 'someA':
+            return Maybe.someA(tx_a(this.p))
+          case 'someB':
+            return Maybe.someB(tx_b(this.p))
+          case 'someC':
+            return Maybe.someC(tx_c(this.p))
+          case 'someD':
+            return Maybe.someD(tx_d(this.p))
+          case 'someE':
+            return Maybe.someE(tx_e(this.p))
+          case 'someF':
+            return Maybe.someF(tx_f(this.p))
+        }
+      },
+    }),
+    type: {
+      fromValues<A, B, C, D, E, F>(values?: {
+        a?: A
+        b?: B
+        c?: C
+        d?: D
+        e?: E
+        f?: F
+      }): Maybe<
+        NonNullable<A>,
+        NonNullable<B>,
+        NonNullable<C>,
+        NonNullable<D>,
+        NonNullable<E>,
+        NonNullable<F>
+      > {
+        if (values?.a) return Maybe.someA(values.a)
+        if (values?.b) return Maybe.someB(values.b)
+        if (values?.c) return Maybe.someC(values.c)
+        if (values?.d) return Maybe.someD(values.d)
+        if (values?.e) return Maybe.someE(values.e)
+        if (values?.f) return Maybe.someF(values.f)
+        return Maybe.none()
+      },
+    },
+  })
+
+  t.like(Maybe.fromValues(), { case: 'none', p: unit })
+  t.like(Maybe.fromValues({ a: 'hello' }), { case: 'someA', p: 'hello' })
+  t.like(Maybe.fromValues({ b: 3 }), { case: 'someB', p: 3 })
+  t.like(Maybe.fromValues({ c: 'world' }), { case: 'someC', p: 'world' })
+  t.like(Maybe.fromValues({ d: true }), { case: 'someD', p: true })
+  t.like(Maybe.fromValues({ e: 'foo' }), { case: 'someE', p: 'foo' })
+  t.like(Maybe.fromValues({ f: [false] }), { case: 'someF', p: [false] })
 })

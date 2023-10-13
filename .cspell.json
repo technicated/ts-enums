@@ -21,7 +21,11 @@
     "sandboxed",
     "transpiled",
     "typedoc",
-    "untracked"
+    "untracked",
+    "casesof",
+    "Proto",
+    "Quora",
+    "typeof"
   ],
   "flagWords": [],
   "ignorePaths": [
