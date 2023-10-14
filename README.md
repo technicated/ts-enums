@@ -732,13 +732,11 @@ The specific TypeScript development version is required solely for testing. In p
 
 [☝️ Back to TOC](#table-of-contents)
 
-At the moment there are three main "issues" with the library.
+At the moment there are some minor issues with the library.
 
 **Issue #1:** The types and functions in the library have no documentation attached to them, but I hope that what's written in this README is sufficient to get started!
 
-**Issue #2:** There is an imbalance between `makeProto` and `type` in the first parameter of the `makeEnum` function. I do not like that `makeProto` is a function and `type` is passed as a plain object, because this oftentimes requires the methods inside `type` to specify their parameters / return value types, effectively duplicating what's in the definition of `<Enum>Type`. I'd like to uniform the two in a subsequent release, by replacing `type` with `makeType`.
-
-**Issue #3:** Finally, it appears that currently TypeScript (versions 4.\*, I did not check 5.\*) is non very good at resolving `this` inside getters and setters when using `ThisType`, so when defining accessors in your enum prototype you might face some issues. For now, until TypeScript fixes this or I find an alternative approach, it might be better to only use methods inside `makeProto` (and eventually `makeType`).
+**Issue #2:** It appears that currently TypeScript (version `4.*`, I did not check `5.*`) is not very good at resolving `this` inside getters and setters when using `ThisType`, so when defining accessors in your enum prototype you might face some issues. For now, until TypeScript fixes this or I find an alternative approach, it might be better to only use methods inside `makeProto` and `makeType`.
 
 ## Conventions recap
 
