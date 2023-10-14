@@ -367,7 +367,7 @@ Defining the type works in the same way as [defining the prototype](#adding-a-pr
 
 The most powerful abstractions come from generics, and luckily TypeScript has support for them! However, to correctly integrate generics with `ts-enums`, you need to do an extra step to help the compiler digest and "pass down" the information about the generic types.
 
-All the following examples will use a generic enum with a single generic parameter, but this library supports up to six of them (although I hope nobody will never need to utilize them 😅).
+All the following examples will use a generic enum with a single generic parameter, but this library supports up to six of them (although I hope nobody will ever need to utilize them 😅).
 
 Let's translate the original `Maybe` example from the made-up `variant` syntax to this library's syntax. First the code, then the explanation - and for now we are going to omit the prototype and the static methods.
 
@@ -431,13 +431,13 @@ const Maybe = makeEnum1<MaybeHKT, MaybeType>({
       }
     }
   }),
-  type: {
-    fromValue<T>(value: T): Maybe<NonNullable<T>> {
-      return ((value !== null) && (value !== undefined))
+  makeType: (Maybe) => ({
+    fromValue(value) {
+      return value !== null && value !== undefined
         ? Maybe.some(value)
         : Maybe.none()
     },
-  },
+  }),
 })
 ```
 
@@ -1414,4 +1414,4 @@ I'd like to express my gratitude to the guys at [Point-Free](https://www.pointfr
 
 Without their invaluable lessons, I can say without a shadow of doubt that this library would not exist; in particular, this work takes inspiration on their [Series on Algebraic Data Types](https://www.pointfree.co/collections/algebraic-data-types).
 
-I really think that I have become a better software developer thank to their teachings and work, so the least I can do is spread the word and contribute myself to the open source community!
+I really think that I have become a better software developer thanks to their teachings and work, so the least I can do is spread the word and contribute myself to the open source community!
