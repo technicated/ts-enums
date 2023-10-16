@@ -41,6 +41,20 @@ This library tries to fill this gap, by introducing helper types and functions a
 
 That aside, let's start!
 
+# Installation
+
+This library is available on [NPM](https://www.npmjs.com/package/@technicated/ts-enums), so you can install it like the following:
+
+```shell
+npm install @technicated/ts-enums
+```
+
+# Compatibility
+
+Although it is built using `typescript: ^4.8`, the library should be compatible with any version of TypeScript from 4.0 upwards.
+
+The specific TypeScript development version is required solely for testing. In particular, some tests rely on the enhancements made to the `NonNullable` helper type, as explained in more detail in the [official TypeScript 4.8 release notes](https://devblogs.microsoft.com/typescript/announcing-typescript-4-8/#improved-intersection-reduction-union-compatibility-and-narrowing).
+
 # Table of contents
 
 Main topics
@@ -62,15 +76,13 @@ Utilities
 
 Extras
 
-* [Compatibility](#compatibility)
-* [Known issues](#known-issues)
 * [Conventions recap](#conventions-recap)
+* [Known issues](#known-issues)
 * [But why do I need enums?](#but-why-do-i-need-enums)
   * [Example #1 - Product item](#example-1---product-item)
   * [Example #2 - UI framework View Model](#example-2---ui-framework-view-model)
   * [Example #3 - Loading data](#example-3---loading-data)
 * [ts-pattern library](#ts-pattern-library)
-* [Acknowledgments](#acknowledgments)
 
 # Main topics
 
@@ -720,24 +732,6 @@ const b: Color = { case: 'blue' }
 
 # Extras
 
-## Compatibility
-
-[☝️ Back to TOC](#table-of-contents)
-
-Although it is built using `typescript: ^4.8`, the library should be compatible with any version of TypeScript from 4.0 upwards.
-
-The specific TypeScript development version is required solely for testing. In particular, some tests rely on the enhancements made to the `NonNullable` helper type, as explained in more detail in the [official TypeScript 4.8 release notes](https://devblogs.microsoft.com/typescript/announcing-typescript-4-8/#improved-intersection-reduction-union-compatibility-and-narrowing).
-
-## Known issues
-
-[☝️ Back to TOC](#table-of-contents)
-
-At the moment there are some minor issues with the library.
-
-**Issue #1:** The types and functions in the library have no documentation attached to them, but I hope that what's written in this README is sufficient to get started!
-
-**Issue #2:** It appears that currently TypeScript (version `4.*`, I did not check `5.*`) is not very good at resolving `this` inside getters and setters when using `ThisType`, so when defining accessors in your enum prototype you might face some issues. For now, until TypeScript fixes this or I find an alternative approach, it might be better to only use methods inside `makeProto` and `makeType`.
-
 ## Conventions recap
 
 [☝️ Back to TOC](#table-of-contents)
@@ -755,6 +749,16 @@ Here's a list of the conventions this library states for your convenience!
 **_Convention #5_**: In the `makeProto` function, omit all parameters and return types from the implementation of the prototype methods.
 
 **_Convention #6_**: When defining a type to hold static methods for your enum, name it `<EnumName>Type`.
+
+## Known issues
+
+[☝️ Back to TOC](#table-of-contents)
+
+At the moment there are some minor issues with the library.
+
+**Issue #1:** The types and functions in the library have no documentation attached to them, but I hope that what's written in this README is sufficient to get started!
+
+**Issue #2:** It appears that currently TypeScript (version `4.*`, I did not check `5.*`) is not very good at resolving `this` inside getters and setters when using `ThisType`, so when defining accessors in your enum prototype you might face some issues. For now, until TypeScript fixes this or I find an alternative approach, it might be better to only use methods inside `makeProto` and `makeType`.
 
 ## But why do I need enums?
 
@@ -1404,9 +1408,7 @@ t.deepEqual(state, {
 })
 ```
 
-## Acknowledgments
-
-[☝️ Back to TOC](#table-of-contents)
+# Acknowledgments
 
 I'd like to express my gratitude to the guys at [Point-Free](https://www.pointfree.co)! Their primary focus is the Swift programming language, but the core concepts behind what they explain are not specific to Swift itself and are applicable to every other programming language. They have series on functional programming concepts, Parsing, controllable Randomness, and much much more!
 
