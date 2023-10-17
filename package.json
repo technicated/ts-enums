@@ -1,6 +1,6 @@
 {
   "name": "@technicated/ts-enums",
-  "version": "0.9.1",
+  "version": "0.9.2",
   "description": "Sum Types for TypeScript",
   "main": "build/main/index.js",
   "typings": "build/main/index.d.ts",
