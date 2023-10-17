@@ -3,9 +3,9 @@
 <p align="center">Sum types for TypeScript!</p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/downloads-TBD-red" alt="downloads" height="18">
-  <img src="https://img.shields.io/badge/compatibility-TypeScript 4.0%2B-blue" alt="TypeScript 4.0+" height="18">
-  <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT license" height="18">
+  <img src="https://img.shields.io/npm/dm/@technicated/ts-enums.svg" alt="downloads" height="18">
+  <img src="https://img.shields.io/badge/compatibility-TypeScript 4.0%2B-blue" alt="compatibility" height="18">
+  <img src="https://img.shields.io/npm/l/%40technicated%2Fts-enums" alt="MIT license" height="18">
 </p>
 
 <br>
