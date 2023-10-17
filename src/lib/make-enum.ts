@@ -3,15 +3,16 @@ import { unit } from './unit'
 
 export const makeEnum = ({
   makeProto,
-  type,
+  makeType,
 }: {
   makeProto?: (enumProxy: object) => object
-  type?: object
+  makeType?: (enumProxy: object) => object
 } = {}) => {
   const protoWrapper: { proto: object } = { proto: {} }
+  const typeWrapper: { type: object } = { type: {} }
 
-  const result = new Proxy(type || {}, {
-    get(type: Record<string | symbol, unknown>, prop) {
+  const result = new Proxy(typeWrapper, {
+    get({ type }: { type: Record<string | symbol, unknown> }, prop) {
       if (prop in type) {
         return type[prop]
       }
@@ -42,10 +43,17 @@ export const makeEnum = ({
         return Object.setPrototypeOf(obj, protoWrapper.proto)
       }
     },
+    has({ type }: { type: Record<string | symbol, unknown> }, prop): boolean {
+      return prop in type
+    },
   })
 
   if (makeProto) {
     protoWrapper.proto = makeProto(result)
+  }
+
+  if (makeType) {
+    typeWrapper.type = makeType(result)
   }
 
   return result

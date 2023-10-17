@@ -131,8 +131,8 @@ test('enum with proto and type', (t) => {
         }
       },
     }),
-    type: {
-      make<A, B>(...args: [] | [A] | [A, B]): MyEnum<A, B> {
+    makeType: (MyEnum) => ({
+      make(...args) {
         switch (args.length) {
           case 0:
             return MyEnum.empty()
@@ -142,7 +142,7 @@ test('enum with proto and type', (t) => {
             return MyEnum.b(args)
         }
       },
-    },
+    }),
   })
 
   const performCheck = makePerformEqualityCheck(t, MyEnum, (v, prev) => {
@@ -180,8 +180,8 @@ test('enum with type', (t) => {
   }
 
   const MyEnum = makeEnum2<MyEnumHKT, MyEnumType>({
-    type: {
-      make<A, B>(...args: [] | [A] | [A, B]): MyEnum<A, B> {
+    makeType: (MyEnum) => ({
+      make(...args) {
         switch (args.length) {
           case 0:
             return MyEnum.empty()
@@ -191,7 +191,7 @@ test('enum with type', (t) => {
             return MyEnum.b(args)
         }
       },
-    },
+    }),
   })
 
   const performCheck = makePerformEqualityCheck(t, MyEnum)
@@ -282,16 +282,13 @@ test('weird generics', (t) => {
         }
       },
     }),
-    type: {
-      fromValues<A, B>(values?: {
-        a?: A
-        b?: B
-      }): Maybe<NonNullable<A>, NonNullable<B>> {
-        if (values?.a) return Maybe.someA(values.a)
-        if (values?.b) return Maybe.someB(values.b)
+    makeType: (Maybe) => ({
+      fromValues(values) {
+        if (values && 'a' in values && values.a) return Maybe.someA(values.a)
+        if (values && 'b' in values && values.b) return Maybe.someB(values.b)
         return Maybe.none()
       },
-    },
+    }),
   })
 
   t.like(Maybe.fromValues(), { case: 'none', p: unit })

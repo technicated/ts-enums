@@ -41,6 +41,18 @@ This library tries to fill this gap, by introducing helper types and functions a
 
 That aside, let's start!
 
+# Installation
+
+```shell
+npm install @technicated/ts-enums
+```
+
+# Compatibility
+
+Although it is built using `typescript: ^4.8`, the library should be compatible with any version of TypeScript from 4.0 upwards.
+
+The specific TypeScript development version is required solely for testing. In particular, some tests rely on the enhancements made to the `NonNullable` helper type, as explained in more detail in the [official TypeScript 4.8 release notes](https://devblogs.microsoft.com/typescript/announcing-typescript-4-8/#improved-intersection-reduction-union-compatibility-and-narrowing).
+
 # Table of contents
 
 Main topics
@@ -62,15 +74,13 @@ Utilities
 
 Extras
 
-* [Compatibility](#compatibility)
-* [Known issues](#known-issues)
 * [Conventions recap](#conventions-recap)
+* [Known issues](#known-issues)
 * [But why do I need enums?](#but-why-do-i-need-enums)
   * [Example #1 - Product item](#example-1---product-item)
   * [Example #2 - UI framework View Model](#example-2---ui-framework-view-model)
   * [Example #3 - Loading data](#example-3---loading-data)
 * [ts-pattern library](#ts-pattern-library)
-* [Acknowledgments](#acknowledgments)
 
 # Main topics
 
@@ -347,8 +357,8 @@ interface ColorType {
 }
 
 const Color = makeEnum<Color, ColorType>({
-  type:  {
-    random(): Color {
+  makeType: (Color) => ({
+    random() {
       if (Math.random() > 0.3) {
         return Color.red() // we prefer red!
       }
@@ -356,12 +366,12 @@ const Color = makeEnum<Color, ColorType>({
       return Math.random() < 0.5
         ? Color.green()
         : Color.blue()
-    }
-  }
+    },
+  }),
 })
 ```
 
-[THIS IS EXPECTED TO CHANGE IN ORDER TO UNIFORM THE TWO INTERFACES] Defining the type has not the same issue of the [prototype declaration](#adding-a-prototype): you can directly refer to the enum type in the methods definition, so TypeScript can correctly reason about your types. This is true even for generic enums, since for static methods you are forced to specify the generic parameters (this is true even for "regular" classes). [THIS IS TRUE BUT THEN YOU MUST REPEAT EVERY SIGNATURE TWO TIMES, WHICH CAN BE BORING]
+Defining the type works in the same way as [defining the prototype](#adding-a-prototype): use a function to declare it and receive a copy of the enum you are building as a parameter of the `makeType` function. As per **_convention #4_** call this symbol with the same name of the enum.
 
 ## Using generics
 
@@ -369,7 +379,7 @@ const Color = makeEnum<Color, ColorType>({
 
 The most powerful abstractions come from generics, and luckily TypeScript has support for them! However, to correctly integrate generics with `ts-enums`, you need to do an extra step to help the compiler digest and "pass down" the information about the generic types.
 
-All the following examples will use a generic enum with a single generic parameter, but this library supports up to six of them (although I hope nobody will never need to utilize them 😅).
+All the following examples will use a generic enum with a single generic parameter, but this library supports up to six of them (although I hope nobody will ever need to utilize them 😅).
 
 Let's translate the original `Maybe` example from the made-up `variant` syntax to this library's syntax. First the code, then the explanation - and for now we are going to omit the prototype and the static methods.
 
@@ -433,13 +443,13 @@ const Maybe = makeEnum1<MaybeHKT, MaybeType>({
       }
     }
   }),
-  type: {
-    fromValue<T>(value: T): Maybe<NonNullable<T>> {
-      return ((value !== null) && (value !== undefined))
+  makeType: (Maybe) => ({
+    fromValue(value) {
+      return value !== null && value !== undefined
         ? Maybe.some(value)
         : Maybe.none()
     },
-  },
+  }),
 })
 ```
 
@@ -722,26 +732,6 @@ const b: Color = { case: 'blue' }
 
 # Extras
 
-## Compatibility
-
-[☝️ Back to TOC](#table-of-contents)
-
-Although it is built using `typescript: ^4.8`, the library should be compatible with any version of TypeScript from 4.0 upwards.
-
-The specific TypeScript development version is required solely for testing. In particular, some tests rely on the enhancements made to the `NonNullable` helper type, as explained in more detail in the [official TypeScript 4.8 release notes](https://devblogs.microsoft.com/typescript/announcing-typescript-4-8/#improved-intersection-reduction-union-compatibility-and-narrowing).
-
-## Known issues
-
-[☝️ Back to TOC](#table-of-contents)
-
-At the moment there are three main "issues" with the library.
-
-**Issue #1:** The types and functions in the library have no documentation attached to them, but I hope that what's written in this README is sufficient to get started!
-
-**Issue #2:** There is an imbalance between `makeProto` and `type` in the first parameter of the `makeEnum` function. I do not like that `makeProto` is a function and `type` is passed as a plain object, because this oftentimes requires the methods inside `type` to specify their parameters / return value types, effectively duplicating what's in the definition of `<Enum>Type`. I'd like to uniform the two in a subsequent release, by replacing `type` with `makeType`.
-
-**Issue #3:** Finally, it appears that currently TypeScript (versions 4.\*, I did not check 5.\*) is non very good at resolving `this` inside getters and setters when using `ThisType`, so when defining accessors in your enum prototype you might face some issues. For now, until TypeScript fixes this or I find an alternative approach, it might be better to only use methods inside `makeProto` (and eventually `makeType`).
-
 ## Conventions recap
 
 [☝️ Back to TOC](#table-of-contents)
@@ -759,6 +749,16 @@ Here's a list of the conventions this library states for your convenience!
 **_Convention #5_**: In the `makeProto` function, omit all parameters and return types from the implementation of the prototype methods.
 
 **_Convention #6_**: When defining a type to hold static methods for your enum, name it `<EnumName>Type`.
+
+## Known issues
+
+[☝️ Back to TOC](#table-of-contents)
+
+At the moment there are some minor issues with the library.
+
+**Issue #1:** The types and functions in the library have no documentation attached to them, but I hope that what's written in this README is sufficient to get started!
+
+**Issue #2:** It appears that currently TypeScript (version `4.*`, I did not check `5.*`) is not very good at resolving `this` inside getters and setters when using `ThisType`, so when defining accessors in your enum prototype you might face some issues. For now, until TypeScript fixes this or I find an alternative approach, it might be better to only use methods inside `makeProto` and `makeType`.
 
 ## But why do I need enums?
 
@@ -1408,12 +1408,10 @@ t.deepEqual(state, {
 })
 ```
 
-## Acknowledgments
-
-[☝️ Back to TOC](#table-of-contents)
+# Acknowledgments
 
 I'd like to express my gratitude to the guys at [Point-Free](https://www.pointfree.co)! Their primary focus is the Swift programming language, but the core concepts behind what they explain are not specific to Swift itself and are applicable to every other programming language. They have series on functional programming concepts, Parsing, controllable Randomness, and much much more!
 
 Without their invaluable lessons, I can say without a shadow of doubt that this library would not exist; in particular, this work takes inspiration on their [Series on Algebraic Data Types](https://www.pointfree.co/collections/algebraic-data-types).
 
-I really think that I have become a better software developer thank to their teachings and work, so the least I can do is spread the word and contribute myself to the open source community!
+I really think that I have become a better software developer thanks to their teachings and work, so the least I can do is spread the word and contribute myself to the open source community!

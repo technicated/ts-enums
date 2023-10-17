@@ -204,15 +204,15 @@ test('Adding static methods', (t) => {
   }
 
   const Color = makeEnum<Color, ColorType>({
-    type: {
-      random(): Color {
+    makeType: (Color) => ({
+      random() {
         if (random() > 0.3) {
           return Color.red() // we prefer red!
         }
 
         return random() < 0.5 ? Color.green() : Color.blue()
       },
-    },
+    }),
   })
 
   t.deepEqual(Color.random(), Color.red())
@@ -245,13 +245,13 @@ test('Using generics', (t) => {
         }
       },
     }),
-    type: {
-      fromValue<T>(value: T): Maybe<NonNullable<T>> {
+    makeType: (Maybe) => ({
+      fromValue(value) {
         return value !== null && value !== undefined
           ? Maybe.some(value)
           : Maybe.none()
       },
-    },
+    }),
   })
 
   t.deepEqual(Maybe.fromValue(42), Maybe.some(42))

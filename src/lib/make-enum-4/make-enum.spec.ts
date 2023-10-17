@@ -177,10 +177,8 @@ test('enum with proto and type', (t) => {
         }
       },
     }),
-    type: {
-      make<A, B, C, D>(
-        ...args: [] | [A] | [A, B] | [A, B, C] | [A, B, C, D]
-      ): MyEnum<A, B, C, D> {
+    makeType: (MyEnum) => ({
+      make(...args) {
         switch (args.length) {
           case 0:
             return MyEnum.empty()
@@ -194,7 +192,7 @@ test('enum with proto and type', (t) => {
             return MyEnum.d(args)
         }
       },
-    },
+    }),
   })
 
   const performCheck = makePerformEqualityCheck(t, MyEnum, (v, prev) => {
@@ -261,10 +259,8 @@ test('enum with type', (t) => {
   }
 
   const MyEnum = makeEnum4<MyEnumHKT, MyEnumType>({
-    type: {
-      make<A, B, C, D>(
-        ...args: [] | [A] | [A, B] | [A, B, C] | [A, B, C, D]
-      ): MyEnum<A, B, C, D> {
+    makeType: (MyEnum) => ({
+      make(...args) {
         switch (args.length) {
           case 0:
             return MyEnum.empty()
@@ -278,7 +274,7 @@ test('enum with type', (t) => {
             return MyEnum.d(args)
         }
       },
-    },
+    }),
   })
 
   const performCheck = makePerformEqualityCheck(t, MyEnum)
@@ -399,25 +395,15 @@ test('weird generics', (t) => {
         }
       },
     }),
-    type: {
-      fromValues<A, B, C, D>(values?: {
-        a?: A
-        b?: B
-        c?: C
-        d?: D
-      }): Maybe<
-        NonNullable<A>,
-        NonNullable<B>,
-        NonNullable<C>,
-        NonNullable<D>
-      > {
-        if (values?.a) return Maybe.someA(values.a)
-        if (values?.b) return Maybe.someB(values.b)
-        if (values?.c) return Maybe.someC(values.c)
-        if (values?.d) return Maybe.someD(values.d)
+    makeType: (Maybe) => ({
+      fromValues(values) {
+        if (values && 'a' in values && values.a) return Maybe.someA(values.a)
+        if (values && 'b' in values && values.b) return Maybe.someB(values.b)
+        if (values && 'c' in values && values.c) return Maybe.someC(values.c)
+        if (values && 'd' in values && values.d) return Maybe.someD(values.d)
         return Maybe.none()
       },
-    },
+    }),
   })
 
   t.like(Maybe.fromValues(), { case: 'none', p: unit })
