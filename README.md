@@ -359,11 +359,13 @@ interface ColorType {
 const Color = makeEnum<Color, ColorType>({
   makeType: (Color) => ({
     random() {
-      if (random() > 0.3) {
+      if (Math.random() > 0.3) {
         return Color.red() // we prefer red!
       }
 
-      return random() < 0.5 ? Color.green() : Color.blue()
+      return Math.random() < 0.5
+        ? Color.green()
+        : Color.blue()
     },
   }),
 })
