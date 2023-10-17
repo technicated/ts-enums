@@ -43,8 +43,6 @@ That aside, let's start!
 
 # Installation
 
-This library is available on [NPM](https://www.npmjs.com/package/@technicated/ts-enums), so you can install it like the following:
-
 ```shell
 npm install @technicated/ts-enums
 ```
