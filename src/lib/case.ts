@@ -111,9 +111,9 @@ export type Cast<Enum extends EnumShape, C extends Enum['case']> = Enum &
  * An helper type that works almost like `Case`, but does not include the
  * default `unit` payload if one is not supplied.
  *
- * You msut never use this type to declare an enum, but should only use it when
- * creating shape-only enums, like you do with interfaces for basic behaviorless
- * objects.
+ * You must never use this type to declare an enum, but should only use it when
+ * creating shape-only enums, like you do with interfaces for basic
+ * behavior-less objects.
  *
  * ```typescript
  * interface WebSocketConfig {
