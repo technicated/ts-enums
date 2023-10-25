@@ -27,6 +27,7 @@ interface MakeEnumFn {
  *
  * ```typescript
  * // Enum with no prototype and no statics
+ *
  * type Shape =
  *   | Case<'circle', { radius: number }>
  *   | Case<'rectangle', { width: number, height: number }>
@@ -37,6 +38,7 @@ interface MakeEnumFn {
  * s = Shape.rectangle({ width: 400, height: 300 })
  *
  * // Enum with prototype and no statics
+ *
  * interface ShapeProto {
  *   area(): number
  * }
@@ -65,6 +67,7 @@ interface MakeEnumFn {
  * console.log(s.area()) // prints 120000
  *
  * // Enum with no prototype and statics
+ *
  * interface ShapeType {
  *   fromConfig(...args: [number, number?]): Shape
  * }
@@ -96,8 +99,54 @@ interface MakeEnumFn {
  * console.log(s) // will be a square
  * s = Shape.fromConfig(20, 30)
  * console.log(s) // will be a rectangle
+ *
+ * // Enum with prototype and statics
+ *
+ * interface ShapeType {
+ *   fromConfig(...args: [number, number?]): Shape
+ * }
+ *
+ * interface ShapeProto {
+ *   area(): number
+ * }
+ *
+ * type Shape = ShapeProto & (
+ *   | Case<'circle', { radius: number }>
+ *   | Case<'rectangle', { width: number, height: number }>
+ *   | Case<'square', { side: number }>
+ * )
+ *
+ * const Shape = makeEnum<Shape>({
+ *   makeProto: () => ({
+ *     area() {
+ *       switch (this.case) {
+ *         case 'circle': return Math.PI * this.p.radius ** 2
+ *         case 'rectangle': return this.p.width * this.p.height
+ *         case 'square': return this.p.side ** 2
+ *       }
+ *     },
+ *   }),
+ *   makeType: (Shape) => ({
+ *     fromConfig(...args) {
+ *       const [a, b] = args
+ *
+ *       if (b === undefined) {
+ *         return Shape.circle({ radius: a })
+ *       } else if (a === b) {
+ *         return Shape.square({ side: a })
+ *       } else {
+ *         return Shape.rectangle({ width: a, height: b })
+ *       }
+ *     },
+ *   }),
+ * })
+ *
+ * var s = Shape.fromConfig(20)
+ * console.log(s.area()) // prints something like 1256.637...
+ * s = Shape.fromConfig(20, 20)
+ * console.log(s.area()) // prints 400
+ * s = Shape.fromConfig(20, 30)
+ * console.log(s.area()) // prints 600
  * ```
  */
 export const makeEnum = base.makeEnum as MakeEnumFn
-
-const asd = makeEnum<null>()
