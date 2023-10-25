@@ -8,7 +8,7 @@ interface MakeEnumFn {
 }
 
 /**
- * Create a generic enum with two generic parameter given a specific shape and
+ * Create a generic enum with two generic parameters given a specific shape and
  * an optional definition.
  *
  * This is the second generic variant of the `makeEnum` family of functions of

@@ -7,4 +7,30 @@ interface MakeEnumFn {
   ): [EnumType] extends [never] ? EnumCtors<Enum> : EnumType & EnumCtors<Enum>
 }
 
+/**
+ * Create a generic enum with four generic parameters given a specific shape and
+ * an optional definition.
+ *
+ * This is the fourth generic variant of the `makeEnum` family of functions of
+ * the `ts-enums` library, creating enums with four generic parameter. You must
+ * supply at least one generic parameter to it, representing your enum type
+ * definition (cases + optional prototype), and an optional second generic
+ * parameter representing other static properties and methods.
+ *
+ * You need to define a small helper type extending from the `HKT` family of
+ * types when declaring a generic enum. This is needed in order to let
+ * TypeScript defer the resolution of generic parameters until the instantiation
+ * of the enum.
+ *
+ * The `makeEnum4` function automatically detects the "flavour" of your enum and
+ * asks you to supply the prototype and / or the type implementation when
+ * needed.
+ *
+ * There are some conventions when declaring and using an enum, so please refer
+ * to the README for further information.
+ *
+ * See the documentation of `makeEnum`, `makeEnum1` and `makeEnum2` for examples
+ * on how to use this function.
+ * ```
+ */
 export const makeEnum4 = base.makeEnum as MakeEnumFn
