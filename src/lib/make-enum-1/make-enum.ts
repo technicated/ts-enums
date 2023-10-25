@@ -12,10 +12,10 @@ interface MakeEnumFn {
  * an optional definition.
  *
  * This is the first generic variant of the `makeEnum` family of functions of
- * the `ts-enums` library, creating enums which are not generic. You must supply
- * at least one generic parameter to it, representing your enum type definition
- * (cases + optional prototype), and an optional second generic parameter
- * representing other static properties and methods.
+ * the `ts-enums` library, creating enums with one generic parameter. You must
+ * supply at least one generic parameter to it, representing your enum type
+ * definition (cases + optional prototype), and an optional second generic
+ * parameter representing other static properties and methods.
  *
  * You need to define a small helper type extending from the `HKT` family of
  * types when declaring a generic enum. This is needed in order to let
