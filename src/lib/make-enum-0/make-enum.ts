@@ -34,6 +34,7 @@ interface MakeEnumFn {
  *   | Case<'square', { side: number }>
  *
  * const Shape = makeEnum<Shape>()
+ *
  * var s = Shape.circle({ radius: 20 })
  * s = Shape.rectangle({ width: 400, height: 300 })
  *
@@ -116,7 +117,7 @@ interface MakeEnumFn {
  *   | Case<'square', { side: number }>
  * )
  *
- * const Shape = makeEnum<Shape>({
+ * const Shape = makeEnum<Shape, ShapeType>({
  *   makeProto: () => ({
  *     area() {
  *       switch (this.case) {
