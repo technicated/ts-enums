@@ -104,8 +104,10 @@ export const cases: unique symbol = Symbol('ts-enums: Enum cases list')
  * }
  * ```
  */
-export type Cast<Enum extends EnumShape, C extends Enum['case']> = Enum &
+export type Cast<Enum extends EnumShape, C extends Enum['case']> = Extract<
+  Enum,
   CaseName<C>
+>
 
 /**
  * An helper type that works almost like `Case`, but does not include the

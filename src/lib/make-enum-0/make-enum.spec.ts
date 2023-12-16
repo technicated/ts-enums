@@ -455,4 +455,8 @@ test('CasePath', (t) => {
   t.deepEqual(cp3.extract(aNumber), undefined)
   t.deepEqual(cp3.extract(aString), undefined)
   t.deepEqual(cp3.extract(anotherNumber), { value: 999 })
+
+  t.deepEqual(cp1.embed(-1), Container.a_number(-1))
+  t.deepEqual(cp2.embed('hi!'), Container.a_string('hi!'))
+  t.deepEqual(cp3.embed(-1), Container.another_number(-1))
 })
