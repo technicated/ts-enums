@@ -1,4 +1,4 @@
-import { cases } from './case'
+import { CasePath, casePath, cases, EnumShape } from './case'
 import { unit } from './unit'
 
 export const makeEnum = ({
@@ -12,9 +12,17 @@ export const makeEnum = ({
   const typeWrapper: { type: object } = { type: {} }
 
   const result = new Proxy(typeWrapper, {
-    get({ type }: { type: Record<string | symbol, unknown> }, prop) {
+    get({ type }: { type: Record<string | symbol, unknown> }, prop, proxy) {
       if (prop in type) {
         return type[prop]
+      }
+
+      if (prop === casePath) {
+        return (enumCase: string): CasePath<EnumShape, unknown> => ({
+          extract: (root) =>
+            root.case === enumCase ? { value: root.p } : undefined,
+          embed: (value) => proxy[enumCase](value),
+        })
       }
 
       if (prop === cases) {

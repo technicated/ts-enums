@@ -1,5 +1,5 @@
 import test, { ExecutionContext } from 'ava'
-import { Case, cases } from '../case'
+import { Case, casePath, cases } from '../case'
 import { unit, Unit } from '../unit'
 import { makeEnum } from './make-enum'
 import { CasesOf, EnumCtors, EnumShape } from './types'
@@ -426,4 +426,33 @@ test('nested enums', (t) => {
     case: 'some',
     p: { case: 'blue', p: unit },
   })
+})
+
+test('CasePath', (t) => {
+  type Container =
+    | Case<'a_number', number>
+    | Case<'a_string', string>
+    | Case<'another_number', number>
+
+  const Container = makeEnum<Container>()
+
+  const aNumber = Container.a_number(42)
+  const aString = Container.a_string('hello world')
+  const anotherNumber = Container.another_number(999)
+
+  const cp1 = Container[casePath]('a_number')
+  const cp2 = Container[casePath]('a_string')
+  const cp3 = Container[casePath]('another_number')
+
+  t.deepEqual(cp1.extract(aNumber), { value: 42 })
+  t.deepEqual(cp1.extract(aString), undefined)
+  t.deepEqual(cp1.extract(anotherNumber), undefined)
+
+  t.deepEqual(cp2.extract(aNumber), undefined)
+  t.deepEqual(cp2.extract(aString), { value: 'hello world' })
+  t.deepEqual(cp2.extract(anotherNumber), undefined)
+
+  t.deepEqual(cp3.extract(aNumber), undefined)
+  t.deepEqual(cp3.extract(aString), undefined)
+  t.deepEqual(cp3.extract(anotherNumber), { value: 999 })
 })
