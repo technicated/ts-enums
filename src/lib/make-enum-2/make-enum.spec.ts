@@ -309,8 +309,8 @@ test('CasePath', (t) => {
   const Container = makeEnum2<ContainerHKT>()
 
   const value = Container.value<number, string>(42)
-  const array = Container.array([42, 'hello'])
-  const object = Container.object({ a: 42, b: 'hello' })
+  const array = Container.array([2, 'hello'])
+  const object = Container.object({ a: 2, b: 'hello' })
 
   const cp1 = Container[casePath]('value').params<number, string>()
   const cp2 = Container[casePath]('array').params<number, string>()
@@ -321,12 +321,12 @@ test('CasePath', (t) => {
   t.deepEqual(cp1.extract(object), undefined)
 
   t.deepEqual(cp2.extract(value), undefined)
-  t.deepEqual(cp2.extract(array), { value: [42, 'hello'] })
+  t.deepEqual(cp2.extract(array), { value: [2, 'hello'] })
   t.deepEqual(cp2.extract(object), undefined)
 
   t.deepEqual(cp3.extract(value), undefined)
   t.deepEqual(cp3.extract(array), undefined)
-  t.deepEqual(cp3.extract(object), { value: { a: 42, b: 'hello' } })
+  t.deepEqual(cp3.extract(object), { value: { a: 2, b: 'hello' } })
 
   t.deepEqual(cp1.embed(-1), Container.value<number, string>(-1))
   t.deepEqual(cp2.embed([-1, 'hi']), Container.array([-1, 'hi']))

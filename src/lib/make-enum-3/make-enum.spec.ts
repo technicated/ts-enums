@@ -351,30 +351,30 @@ test('CasePath', (t) => {
 
   const Container = makeEnum3<ContainerHKT>()
 
-  const value = Container.value<number, string, boolean>(42)
-  const array = Container.array([42, 'hello', true])
-  const object = Container.object({ a: 42, b: 'hello', c: true })
+  const value = Container.value<string, number, string>(42)
+  const array = Container.array(['hello', 3, 'world'])
+  const object = Container.object({ a: 'hello', b: 3, c: 'world' })
 
-  const cp1 = Container[casePath]('value').params<number, string, boolean>()
-  const cp2 = Container[casePath]('array').params<number, string, boolean>()
-  const cp3 = Container[casePath]('object').params<number, string, boolean>()
+  const cp1 = Container[casePath]('value').params<string, number, string>()
+  const cp2 = Container[casePath]('array').params<string, number, string>()
+  const cp3 = Container[casePath]('object').params<string, number, string>()
 
   t.deepEqual(cp1.extract(value), { value: 42 })
   t.deepEqual(cp1.extract(array), undefined)
   t.deepEqual(cp1.extract(object), undefined)
 
   t.deepEqual(cp2.extract(value), undefined)
-  t.deepEqual(cp2.extract(array), { value: [42, 'hello', true] })
+  t.deepEqual(cp2.extract(array), { value: ['hello', 3, 'world'] })
   t.deepEqual(cp2.extract(object), undefined)
 
   t.deepEqual(cp3.extract(value), undefined)
   t.deepEqual(cp3.extract(array), undefined)
-  t.deepEqual(cp3.extract(object), { value: { a: 42, b: 'hello', c: true } })
+  t.deepEqual(cp3.extract(object), { value: { a: 'hello', b: 3, c: 'world' } })
 
-  t.deepEqual(cp1.embed(-1), Container.value<number, string, boolean>(-1))
-  t.deepEqual(cp2.embed([-1, 'hi', false]), Container.array([-1, 'hi', false]))
+  t.deepEqual(cp1.embed(-1), Container.value<string, number, string>(-1))
+  t.deepEqual(cp2.embed(['hi', -1, 'hi']), Container.array(['hi', -1, 'hi']))
   t.deepEqual(
-    cp3.embed({ a: -1, b: 'hi', c: false }),
-    Container.object({ a: -1, b: 'hi', c: false })
+    cp3.embed({ a: 'hi', b: -1, c: 'hi' }),
+    Container.object({ a: 'hi', b: -1, c: 'hi' })
   )
 })

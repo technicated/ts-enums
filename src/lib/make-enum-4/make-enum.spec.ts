@@ -425,27 +425,27 @@ test('CasePath', (t) => {
 
   const Container = makeEnum4<ContainerHKT>()
 
-  const value = Container.value<number, string, boolean, null>(42)
-  const array = Container.array([42, 'hello', true, null])
-  const object = Container.object({ a: 42, b: 'hello', c: true, d: null })
+  const value = Container.value<string, number, string, boolean>(42)
+  const array = Container.array(['hello', 3, 'world', false])
+  const object = Container.object({ a: 'hello', b: 3, c: 'world', d: false })
 
   const cp1 = Container[casePath]('value').params<
+    string,
     number,
     string,
-    boolean,
-    null
+    boolean
   >()
   const cp2 = Container[casePath]('array').params<
+    string,
     number,
     string,
-    boolean,
-    null
+    boolean
   >()
   const cp3 = Container[casePath]('object').params<
+    string,
     number,
     string,
-    boolean,
-    null
+    boolean
   >()
 
   t.deepEqual(cp1.extract(value), { value: 42 })
@@ -453,22 +453,25 @@ test('CasePath', (t) => {
   t.deepEqual(cp1.extract(object), undefined)
 
   t.deepEqual(cp2.extract(value), undefined)
-  t.deepEqual(cp2.extract(array), { value: [42, 'hello', true, null] })
+  t.deepEqual(cp2.extract(array), { value: ['hello', 3, 'world', false] })
   t.deepEqual(cp2.extract(object), undefined)
 
   t.deepEqual(cp3.extract(value), undefined)
   t.deepEqual(cp3.extract(array), undefined)
   t.deepEqual(cp3.extract(object), {
-    value: { a: 42, b: 'hello', c: true, d: null },
+    value: { a: 'hello', b: 3, c: 'world', d: false },
   })
 
-  t.deepEqual(cp1.embed(-1), Container.value<number, string, boolean, null>(-1))
   t.deepEqual(
-    cp2.embed([-1, 'hi', false, null]),
-    Container.array([-1, 'hi', false, null])
+    cp1.embed(-1),
+    Container.value<string, number, string, boolean>(-1)
   )
   t.deepEqual(
-    cp3.embed({ a: -1, b: 'hi', c: false, d: null }),
-    Container.object({ a: -1, b: 'hi', c: false, d: null })
+    cp2.embed(['hi', -1, 'hi', false]),
+    Container.array(['hi', -1, 'hi', false])
+  )
+  t.deepEqual(
+    cp3.embed({ a: 'hi', b: -1, c: 'hi', d: false }),
+    Container.object({ a: 'hi', b: -1, c: 'hi', d: false })
   )
 })
