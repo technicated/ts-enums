@@ -1,4 +1,10 @@
-import { EnumShape as BaseEnumShape, cases, Cast } from '../case'
+import {
+  EnumShape as BaseEnumShape,
+  CasePath,
+  casePath,
+  cases,
+  Cast,
+} from '../case'
 import { HKT4, Kind4 } from '../hkt'
 import { Unit } from '../unit'
 
@@ -26,7 +32,18 @@ export type EnumCtors<EnumHKT extends EnumShape> = {
       ? Partial<EnumCtorArgs<EnumHKT, Case, A, B, C, D>>
       : EnumCtorArgs<EnumHKT, Case, A, B, C, D>
   ) => Kind4<EnumHKT, A, B, C, D>
-} & Record<typeof cases, CasesOfEnum<EnumHKT>>
+} & Record<typeof cases, CasesOfEnum<EnumHKT>> &
+  Record<
+    typeof casePath,
+    <Case extends EnumHKT['type']['case']>(
+      enumCase: Case
+    ) => {
+      params: <A, B, C, D>() => CasePath<
+        Kind4<EnumHKT, A, B, C, D>,
+        Cast<Kind4<EnumHKT, A, B, C, D>, Case>['p']
+      >
+    }
+  >
 
 type MakeProtoFn<EnumHKT extends EnumShape, EnumType extends object> = <
   A,

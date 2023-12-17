@@ -1,5 +1,5 @@
 import test, { ExecutionContext } from 'ava'
-import { Case, cases } from '../case'
+import { Case, casePath, cases } from '../case'
 import { HKT5 } from '../hkt'
 import { unit, Unit } from '../unit'
 import { makeEnum5 } from './make-enum'
@@ -518,4 +518,84 @@ test('weird generics', (t) => {
   t.like(Maybe.fromValues({ c: 'world' }), { case: 'someC', p: 'world' })
   t.like(Maybe.fromValues({ d: true }), { case: 'someD', p: true })
   t.like(Maybe.fromValues({ e: 'foo' }), { case: 'someE', p: 'foo' })
+})
+
+test('CasePath', (t) => {
+  type Container<A, B, C, D, E> =
+    | Case<'value', A | B | C | D | E>
+    | Case<'array', [A, B, C, D, E]>
+    | Case<'object', { a: A; b: B; c: C; d: D; e: E }>
+
+  interface ContainerHKT extends HKT5 {
+    readonly type: Container<
+      this['_A'],
+      this['_B'],
+      this['_C'],
+      this['_D'],
+      this['_E']
+    >
+  }
+
+  const Container = makeEnum5<ContainerHKT>()
+
+  const value = Container.value<string, number, string, boolean, string>(42)
+  const array = Container.array(['hello', 3, 'world', false, 'foo'])
+  const object = Container.object({
+    a: 'hello',
+    b: 3,
+    c: 'world',
+    d: false,
+    e: 'foo',
+  })
+
+  const cp1 = Container[casePath]('value').params<
+    string,
+    number,
+    string,
+    boolean,
+    string
+  >()
+  const cp2 = Container[casePath]('array').params<
+    string,
+    number,
+    string,
+    boolean,
+    string
+  >()
+  const cp3 = Container[casePath]('object').params<
+    string,
+    number,
+    string,
+    boolean,
+    string
+  >()
+
+  t.deepEqual(cp1.extract(value), { value: 42 })
+  t.deepEqual(cp1.extract(array), undefined)
+  t.deepEqual(cp1.extract(object), undefined)
+
+  t.deepEqual(cp2.extract(value), undefined)
+  t.deepEqual(cp2.extract(array), {
+    value: ['hello', 3, 'world', false, 'foo'],
+  })
+  t.deepEqual(cp2.extract(object), undefined)
+
+  t.deepEqual(cp3.extract(value), undefined)
+  t.deepEqual(cp3.extract(array), undefined)
+  t.deepEqual(cp3.extract(object), {
+    value: { a: 'hello', b: 3, c: 'world', d: false, e: 'foo' },
+  })
+
+  t.deepEqual(
+    cp1.embed(-1),
+    Container.value<string, number, string, boolean, string>(-1)
+  )
+  t.deepEqual(
+    cp2.embed(['hi', -1, 'hi', false, 'hi']),
+    Container.array(['hi', -1, 'hi', false, 'hi'])
+  )
+  t.deepEqual(
+    cp3.embed({ a: 'hi', b: -1, c: 'hi', d: false, e: 'hi' }),
+    Container.object({ a: 'hi', b: -1, c: 'hi', d: false, e: 'hi' })
+  )
 })

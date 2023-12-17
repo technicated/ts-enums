@@ -1,5 +1,5 @@
 import test, { ExecutionContext } from 'ava'
-import { Case, cases } from '../case'
+import { Case, casePath, cases } from '../case'
 import { HKT4 } from '../hkt'
 import { unit, Unit } from '../unit'
 import { makeEnum4 } from './make-enum'
@@ -411,4 +411,64 @@ test('weird generics', (t) => {
   t.like(Maybe.fromValues({ b: 3 }), { case: 'someB', p: 3 })
   t.like(Maybe.fromValues({ c: 'world' }), { case: 'someC', p: 'world' })
   t.like(Maybe.fromValues({ d: true }), { case: 'someD', p: true })
+})
+
+test('CasePath', (t) => {
+  type Container<A, B, C, D> =
+    | Case<'value', A | B | C | D>
+    | Case<'array', [A, B, C, D]>
+    | Case<'object', { a: A; b: B; c: C; d: D }>
+
+  interface ContainerHKT extends HKT4 {
+    readonly type: Container<this['_A'], this['_B'], this['_C'], this['_D']>
+  }
+
+  const Container = makeEnum4<ContainerHKT>()
+
+  const value = Container.value<number, string, boolean, null>(42)
+  const array = Container.array([42, 'hello', true, null])
+  const object = Container.object({ a: 42, b: 'hello', c: true, d: null })
+
+  const cp1 = Container[casePath]('value').params<
+    number,
+    string,
+    boolean,
+    null
+  >()
+  const cp2 = Container[casePath]('array').params<
+    number,
+    string,
+    boolean,
+    null
+  >()
+  const cp3 = Container[casePath]('object').params<
+    number,
+    string,
+    boolean,
+    null
+  >()
+
+  t.deepEqual(cp1.extract(value), { value: 42 })
+  t.deepEqual(cp1.extract(array), undefined)
+  t.deepEqual(cp1.extract(object), undefined)
+
+  t.deepEqual(cp2.extract(value), undefined)
+  t.deepEqual(cp2.extract(array), { value: [42, 'hello', true, null] })
+  t.deepEqual(cp2.extract(object), undefined)
+
+  t.deepEqual(cp3.extract(value), undefined)
+  t.deepEqual(cp3.extract(array), undefined)
+  t.deepEqual(cp3.extract(object), {
+    value: { a: 42, b: 'hello', c: true, d: null },
+  })
+
+  t.deepEqual(cp1.embed(-1), Container.value<number, string, boolean, null>(-1))
+  t.deepEqual(
+    cp2.embed([-1, 'hi', false, null]),
+    Container.array([-1, 'hi', false, null])
+  )
+  t.deepEqual(
+    cp3.embed({ a: -1, b: 'hi', c: false, d: null }),
+    Container.object({ a: -1, b: 'hi', c: false, d: null })
+  )
 })
