@@ -33,12 +33,12 @@ export type EnumCtors<EnumHKT extends EnumShape> = {
 } & Record<typeof cases, CasesOfEnum<EnumHKT>> &
   Record<
     typeof casePath,
-    <C extends EnumHKT['type']['case']>(
-      enumCase: C
+    <Case extends EnumHKT['type']['case']>(
+      enumCase: Case
     ) => {
       params: <A, B>() => CasePath<
         Kind2<EnumHKT, A, B>,
-        Cast<Kind2<EnumHKT, A, B>, C>['p']
+        Cast<Kind2<EnumHKT, A, B>, Case>['p']
       >
     }
   >

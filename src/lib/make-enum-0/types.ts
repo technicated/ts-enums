@@ -28,7 +28,9 @@ export type EnumCtors<Enum extends EnumShape> = {
 } & Record<typeof cases, CasesOfEnum<Enum>> &
   Record<
     typeof casePath,
-    <C extends Enum['case']>(enumCase: C) => CasePath<Enum, Cast<Enum, C>['p']>
+    <Case extends Enum['case']>(
+      enumCase: Case
+    ) => CasePath<Enum, Cast<Enum, Case>['p']>
   >
 
 type MakeProtoFn<Enum extends EnumShape, EnumType extends object> = (
