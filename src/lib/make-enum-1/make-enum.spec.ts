@@ -1,5 +1,5 @@
 import test, { ExecutionContext } from 'ava'
-import { Case, cases } from '../case'
+import { Case, casePath, cases } from '../case'
 import { HKT } from '../hkt'
 import { unit, Unit } from '../unit'
 import { makeEnum1 } from './make-enum'
@@ -254,4 +254,41 @@ test('weird generics', (t) => {
 
   t.like(Maybe.none(), { case: 'none', p: unit })
   t.like(Maybe.some(42), { case: 'some', p: 42 })
+})
+
+test('CasePath', (t) => {
+  type Container<A> =
+    | Case<'value', A>
+    | Case<'array', [A]>
+    | Case<'object', { a: A }>
+
+  interface ContainerHKT extends HKT {
+    readonly type: Container<this['_A']>
+  }
+
+  const Container = makeEnum1<ContainerHKT>()
+
+  const value = Container.value(42)
+  const array = Container.array([42])
+  const object = Container.object({ a: 42 })
+
+  const cp1 = Container[casePath]('value').params<number>()
+  const cp2 = Container[casePath]('array').params<number>()
+  const cp3 = Container[casePath]('object').params<number>()
+
+  t.deepEqual(cp1.extract(value), { value: 42 })
+  t.deepEqual(cp1.extract(array), undefined)
+  t.deepEqual(cp1.extract(object), undefined)
+
+  t.deepEqual(cp2.extract(value), undefined)
+  t.deepEqual(cp2.extract(array), { value: [42] })
+  t.deepEqual(cp2.extract(object), undefined)
+
+  t.deepEqual(cp3.extract(value), undefined)
+  t.deepEqual(cp3.extract(array), undefined)
+  t.deepEqual(cp3.extract(object), { value: { a: 42 } })
+
+  t.deepEqual(cp1.embed(-1), Container.value(-1))
+  t.deepEqual(cp2.embed([-1]), Container.array([-1]))
+  t.deepEqual(cp3.embed({ a: -1 }), Container.object({ a: -1 }))
 })

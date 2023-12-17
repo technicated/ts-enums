@@ -18,7 +18,12 @@ export const makeEnum = ({
       }
 
       if (prop === casePath) {
-        return (enumCase: string): CasePath<EnumShape, unknown> => ({
+        return (
+          enumCase: string
+        ): CasePath<EnumShape, unknown> & { params: unknown } => ({
+          params() {
+            return this
+          },
           extract: (root) =>
             root.case === enumCase ? { value: root.p } : undefined,
           embed: (value) => proxy[enumCase](value),
