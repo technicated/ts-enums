@@ -197,6 +197,10 @@ export const casePath = Symbol('ts-enums: Enum casePath function')
  * directly access it.
  */
 export interface CasePath<Enum extends EnumShape, Value> {
+  appending: <Enum extends EnumShape, Value extends EnumShape, Leaf>(
+    this: CasePath<Enum, Value>,
+    other: CasePath<Value, Leaf>
+  ) => CasePath<Enum, Leaf>
   extract: (root: Enum) => { value: Value } | undefined
   embed: (value: Value) => Enum
 }

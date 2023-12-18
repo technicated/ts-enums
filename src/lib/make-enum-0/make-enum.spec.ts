@@ -460,3 +460,41 @@ test('CasePath', (t) => {
   t.deepEqual(cp2.embed('hi!'), Container.a_string('hi!'))
   t.deepEqual(cp3.embed(-1), Container.another_number(-1))
 })
+
+test('CasePath concatenation', (t) => {
+  type Base = Case<'value1', string> | Case<'value2', number>
+  const Base = makeEnum<Base>()
+
+  type Parent = Case<'base', Base> | Case<'other', boolean>
+  const Parent = makeEnum<Parent>()
+
+  const cp1 = Parent[casePath]('base').appending(Base[casePath]('value1'))
+  const cp2 = Parent[casePath]('base').appending(Base[casePath]('value2'))
+
+  t.deepEqual(cp1.extract(Parent.base(Base.value1('hello'))), {
+    value: 'hello',
+  })
+  t.deepEqual(cp1.extract(Parent.base(Base.value2(42))), undefined)
+  t.deepEqual(cp1.extract(Parent.other(true)), undefined)
+
+  t.deepEqual(cp2.extract(Parent.base(Base.value1('hello'))), undefined)
+  t.deepEqual(cp2.extract(Parent.base(Base.value2(42))), { value: 42 })
+  t.deepEqual(cp2.extract(Parent.other(true)), undefined)
+
+  t.deepEqual(cp1.embed('hi'), Parent.base(Base.value1('hi')))
+  t.deepEqual(cp2.embed(-1), Parent.base(Base.value2(-1)))
+
+  type SuperParent = Case<'parent', Parent> | Case<'other'>
+  const SuperParent = makeEnum<SuperParent>()
+
+  const cp3 = SuperParent[casePath]('parent').appending(cp1)
+
+  t.deepEqual(
+    cp3.extract(SuperParent.parent(Parent.base(Base.value1('hello')))),
+    { value: 'hello' }
+  )
+  t.deepEqual(
+    cp3.embed('hi'),
+    SuperParent.parent(Parent.base(Base.value1('hi')))
+  )
+})
