@@ -1,5 +1,5 @@
 import test, { ExecutionContext } from 'ava'
-import { Case, casePath, cases } from '../case'
+import { Case, cases } from '../case'
 import { HKT } from '../hkt'
 import { unit, Unit } from '../unit'
 import { makeEnum1 } from './make-enum'
@@ -272,9 +272,12 @@ test('CasePath', (t) => {
   const array = Container.array([42])
   const object = Container.object({ a: 42 })
 
-  const cp1 = Container[casePath]('value').params<number>()
-  const cp2 = Container[casePath]('array').params<number>()
-  const cp3 = Container[casePath]('object').params<number>()
+  //const cp1 = Container[casePath]('value').params<number>()
+  const cp1 = Container<number>('value')
+  //const cp2 = Container[casePath]('array').params<number>()
+  const cp2 = Container<number>('array')
+  //const cp3 = Container[casePath]('object').params<number>()
+  const cp3 = Container<number>('object')
 
   t.deepEqual(cp1.extract(value), { value: 42 })
   t.deepEqual(cp1.extract(array), undefined)

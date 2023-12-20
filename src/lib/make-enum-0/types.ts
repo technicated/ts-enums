@@ -1,4 +1,5 @@
 import { EnumShape as BaseEnumShape, CasePath, cases, Cast } from '../case'
+import { UnionToIntersection } from '../union-to-intersection'
 import { Unit } from '../unit'
 
 export type EnumShape = BaseEnumShape
@@ -6,6 +7,15 @@ export type EnumShape = BaseEnumShape
 type CasesOfEnum<Enum extends EnumShape> = {
   [Case in Enum['case']]: Case
 }
+
+type CasePathFn<Enum extends EnumShape, Case extends Enum['case']> = {
+  (enumCase: Case): CasePath<Enum, Cast<Enum, Case>['p']>
+}
+
+type CasePathFns<Enum extends EnumShape> =
+  Enum['case'] extends infer Cases extends string
+    ? { [Case in Cases]: CasePathFn<Enum, Case> }[Cases]
+    : never
 
 // this is like this for consistency with generic variants
 type EnumCtorArgs<Enum extends EnumShape, Case extends Enum['case']> = [
@@ -19,12 +29,8 @@ export type EnumCtors<Enum extends EnumShape> = {
       ? Partial<EnumCtorArgs<Enum, Case>>
       : EnumCtorArgs<Enum, Case>
   ) => Enum
-} & Record<typeof cases, CasesOfEnum<Enum>> & {
-    <Case extends Enum['case']>(enumCase: Case): CasePath<
-      Enum,
-      Cast<Enum, Case>['p']
-    >
-  }
+} & Record<typeof cases, CasesOfEnum<Enum>> &
+  UnionToIntersection<CasePathFns<Enum>>
 
 type MakeProtoFn<Enum extends EnumShape, EnumType extends object> = (
   Enum: [EnumType] extends [never]

@@ -1,5 +1,5 @@
 import test, { ExecutionContext } from 'ava'
-import { Case, casePath, cases } from '../case'
+import { Case, cases } from '../case'
 import { HKT6 } from '../hkt'
 import { unit, Unit } from '../unit'
 import { makeEnum6 } from './make-enum'
@@ -675,30 +675,30 @@ test('CasePath', (t) => {
     f: { name: 'User' },
   })
 
-  const cp1 = Container[casePath]('value').params<
+  const cp1 = Container<
     string,
     number,
     string,
     boolean,
     string,
     { name: string }
-  >()
-  const cp2 = Container[casePath]('array').params<
+  >('value')
+  const cp2 = Container<
     string,
     number,
     string,
     boolean,
     string,
     { name: string }
-  >()
-  const cp3 = Container[casePath]('object').params<
+  >('array')
+  const cp3 = Container<
     string,
     number,
     string,
     boolean,
     string,
     { name: string }
-  >()
+  >('object')
 
   t.deepEqual(cp1.extract(value), { value: 42 })
   t.deepEqual(cp1.extract(array), undefined)

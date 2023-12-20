@@ -1,5 +1,6 @@
 import { EnumShape as BaseEnumShape, CasePath, cases, Cast } from '../case'
 import { HKT, Kind } from '../hkt'
+import { UnionToIntersection } from '../union-to-intersection'
 import { Unit } from '../unit'
 
 export type EnumShape = HKT & { readonly type: BaseEnumShape }
@@ -7,6 +8,21 @@ export type EnumShape = HKT & { readonly type: BaseEnumShape }
 type CasesOfEnum<EnumHKT extends EnumShape> = {
   [Case in EnumHKT['type']['case']]: Case
 }
+
+type CasePathFn<
+  EnumHKT extends EnumShape,
+  Case extends EnumHKT['type']['case']
+> = {
+  <A>(enumCase: Case): CasePath<
+    Kind<EnumHKT, A>,
+    Cast<Kind<EnumHKT, A>, Case>['p']
+  >
+}
+
+type CasePathFns<EnumHKT extends EnumShape> =
+  EnumHKT['type']['case'] extends infer Cases extends string
+    ? { [Case in Cases]: CasePathFn<EnumHKT, Case> }[Cases]
+    : never
 
 // this has to be a separated type or `EnumCtors` will not work!
 type EnumCtorArgs<
@@ -23,44 +39,8 @@ export type EnumCtors<EnumHKT extends EnumShape> = {
       ? Partial<EnumCtorArgs<EnumHKT, Case, A>>
       : EnumCtorArgs<EnumHKT, Case, A>
   ) => Kind<EnumHKT, A>
-} & Record<typeof cases, CasesOfEnum<EnumHKT>> & {
-  <A>(enumCase: 'value'): CasePath<
-    Kind<EnumHKT, A>,
-    Cast<Kind<EnumHKT, A>, 'value'>['p']
-  >
-  <A>(enumCase: 'array'): CasePath<
-    Kind<EnumHKT, A>,
-    Cast<Kind<EnumHKT, A>, 'array'>['p']
-  >
-}
-
-interface SomeEnum {
-  readonly type: { case: 'a', p: number } | { case: 'b', p: string }
-}
-
-type Magic = Helper0<SomeEnum>
-type Magic2 = {
-  <A>(enumCase: 'a'): CasePath<Kind<SomeEnum, A>, Cast<Kind<SomeEnum, A>, 'a'>['p']>
-} | {
-  <A>(enumCase: 'b'): CasePath<Kind<SomeEnum, A>, Cast<Kind<SomeEnum, A>, 'b'>['p']>
-}
-
-type UnionToIntersection<U> =
-  (U extends any ? (x: U) => void : never) extends ((x: infer I) => void) ? I : never
-
-type Helper0<EnumHKT extends EnumShape> = UnionToIntersection<Helper1<EnumHKT>>
-
-const ggg: Magic = undefined as any
-
-const ciao = ggg('a')
-
-type Helper1<EnumHKT extends EnumShape> = {
-  [C in EnumHKT['type']['case']]: Helper2<EnumHKT, C>
-}[EnumHKT['type']['case']]
-
-type Helper2<EnumHKT extends EnumShape, C extends EnumHKT['type']['case']> = {
-  <A>(enumCase: C): CasePath<Kind<EnumHKT, A>, Cast<Kind<EnumHKT, A>, C>['p']>
-}
+} & Record<typeof cases, CasesOfEnum<EnumHKT>> &
+  UnionToIntersection<CasePathFns<EnumHKT>>
 
 type MakeProtoFn<EnumHKT extends EnumShape, EnumType extends object> = <A>(
   Enum: [EnumType] extends [never]
@@ -79,19 +59,19 @@ export type MakeEnumFnArgs<
   EnumType extends object = never
 > = [EnumType] extends [never]
   ? EnumHKT['type'] & { _: unknown } extends infer _T
-  ? keyof Omit<_T, 'case' | 'p'> extends '_'
-  ? []
-  : [{ makeProto: MakeProtoFn<EnumHKT, EnumType> }]
-  : never
+    ? keyof Omit<_T, 'case' | 'p'> extends '_'
+      ? []
+      : [{ makeProto: MakeProtoFn<EnumHKT, EnumType> }]
+    : never
   : EnumHKT['type'] & { _: unknown } extends infer _T
   ? keyof Omit<_T, 'case' | 'p'> extends '_'
-  ? [{ makeType: MakeTypeFn<EnumHKT, EnumType> }]
-  : [
-    {
-      makeProto: MakeProtoFn<EnumHKT, EnumType>
-      makeType: MakeTypeFn<EnumHKT, EnumType>
-    }
-  ]
+    ? [{ makeType: MakeTypeFn<EnumHKT, EnumType> }]
+    : [
+        {
+          makeProto: MakeProtoFn<EnumHKT, EnumType>
+          makeType: MakeTypeFn<EnumHKT, EnumType>
+        }
+      ]
   : never
 
 export type CasesOf<Ctors> = Ctors extends EnumCtors<infer EnumHKT>

@@ -1,11 +1,6 @@
-import {
-  EnumShape as BaseEnumShape,
-  CasePath,
-  casePath,
-  cases,
-  Cast,
-} from '../case'
+import { EnumShape as BaseEnumShape, CasePath, cases, Cast } from '../case'
 import { HKT2, Kind2 } from '../hkt'
+import { UnionToIntersection } from '../union-to-intersection'
 import { Unit } from '../unit'
 
 export type EnumShape = HKT2 & { readonly type: BaseEnumShape }
@@ -13,6 +8,21 @@ export type EnumShape = HKT2 & { readonly type: BaseEnumShape }
 type CasesOfEnum<EnumHKT extends EnumShape> = {
   [Case in EnumHKT['type']['case']]: Case
 }
+
+type CasePathFn<
+  EnumHKT extends EnumShape,
+  Case extends EnumHKT['type']['case']
+> = {
+  <A, B>(enumCase: Case): CasePath<
+    Kind2<EnumHKT, A, B>,
+    Cast<Kind2<EnumHKT, A, B>, Case>['p']
+  >
+}
+
+type CasePathFns<EnumHKT extends EnumShape> =
+  EnumHKT['type']['case'] extends infer Cases extends string
+    ? { [Case in Cases]: CasePathFn<EnumHKT, Case> }[Cases]
+    : never
 
 // this has to be a separated type or `EnumCtors` will not work!
 type EnumCtorArgs<
@@ -31,17 +41,7 @@ export type EnumCtors<EnumHKT extends EnumShape> = {
       : EnumCtorArgs<EnumHKT, Case, A, B>
   ) => Kind2<EnumHKT, A, B>
 } & Record<typeof cases, CasesOfEnum<EnumHKT>> &
-  Record<
-    typeof casePath,
-    <Case extends EnumHKT['type']['case']>(
-      enumCase: Case
-    ) => {
-      params: <A, B>() => CasePath<
-        Kind2<EnumHKT, A, B>,
-        Cast<Kind2<EnumHKT, A, B>, Case>['p']
-      >
-    }
-  >
+  UnionToIntersection<CasePathFns<EnumHKT>>
 
 type MakeProtoFn<EnumHKT extends EnumShape, EnumType extends object> = <A, B>(
   Enum: [EnumType] extends [never]
