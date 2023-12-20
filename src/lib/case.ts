@@ -166,25 +166,6 @@ export type Choice<Name extends string, Payload = never> = [Payload] extends [
   : CaseName<Name> & { readonly p: Payload }
 
 /**
- * A symbol that can be used to index an enum type to obtain its `CasePath`s.
- *
- * ```typescript
- * type Container =
- *   | Case<'a_number', number>
- *   | Case<'a_string', string>
- *   | Case<'another_number', number>
- *
- * const Container = makeEnum<Container>()
- * // todo: example
- * const casesOfColors = Colors[cases]
- * // casesOfColors has properties 'red', 'green' and 'blue' of types,
- * // respectively, 'red', 'green' and 'blue', all are constant strings
- * console.log(casesOfColors.red) // autocompleted, and prints "red"
- * ```
- */
-export const casePath = Symbol('ts-enums: Enum casePath function')
-
-/**
  * A `CasePath` is a type that represents the "projection" of an enum's payload
  * in a generic manner.
  *

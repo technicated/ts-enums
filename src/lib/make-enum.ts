@@ -1,10 +1,10 @@
-import { Case, CasePath, casePath, cases, EnumShape } from './case'
+import { Case, CasePath, cases, EnumShape } from './case'
 import { unit } from './unit'
 
-function opt<A, T>(
-  value: NonNullable<A> | undefined,
-  fn: (a: NonNullable<A>) => T
-): T | undefined {
+function opt<U, V>(
+  value: NonNullable<U> | undefined,
+  fn: (a: NonNullable<U>) => V
+): V | undefined {
   return value !== undefined ? fn(value) : undefined
 }
 
@@ -39,27 +39,32 @@ class CasePathImpl<Root extends EnumShape, Value> {
   }
 }
 
+type MakeCasePathFn = {
+  (enumCase: string): CasePath<EnumShape, unknown>
+}
+
 export const makeEnum = ({
   makeProto,
   makeType,
 }: {
   makeProto?: (enumProxy: object) => object
-  makeType?: (enumProxy: object) => object
+  makeType?: (enumProxy: object) => Record<string | symbol, unknown>
 } = {}) => {
   const protoWrapper: { proto: object } = { proto: {} }
-  const typeWrapper: { type: object } = { type: {} }
+  const typeWrapper: { type: Record<string | symbol, unknown> } = { type: {} }
 
-  const result = new Proxy(typeWrapper, {
-    get({ type }: { type: Record<string | symbol, unknown> }, prop, proxy) {
+  const makeCasePath: MakeCasePathFn = (enumCase) =>
+    CasePathImpl.from(
+      result as Record<string, (payload: unknown) => EnumShape>,
+      enumCase
+    )
+
+  const result: object = new Proxy(makeCasePath, {
+    get(_, prop) {
+      const { type } = typeWrapper
+
       if (prop in type) {
         return type[prop]
-      }
-
-      if (prop === casePath) {
-        return (
-          enumCase: string
-        ): CasePath<EnumShape, unknown> & { params: unknown } =>
-          CasePathImpl.from(proxy, enumCase)
       }
 
       if (prop === cases) {
@@ -88,8 +93,8 @@ export const makeEnum = ({
         return Object.setPrototypeOf(obj, protoWrapper.proto)
       }
     },
-    has({ type }: { type: Record<string | symbol, unknown> }, prop): boolean {
-      return prop in type
+    has(_, prop): boolean {
+      return prop in typeWrapper.type
     },
   })
 

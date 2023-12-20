@@ -1,5 +1,5 @@
 import test, { ExecutionContext } from 'ava'
-import { Case, casePath, cases } from '../case'
+import { Case, cases } from '../case'
 import { unit, Unit } from '../unit'
 import { makeEnum } from './make-enum'
 import { CasesOf, EnumCtors, EnumShape } from './types'
@@ -440,9 +440,12 @@ test('CasePath', (t) => {
   const aString = Container.a_string('hello world')
   const anotherNumber = Container.another_number(999)
 
-  const cp1 = Container[casePath]('a_number')
-  const cp2 = Container[casePath]('a_string')
-  const cp3 = Container[casePath]('another_number')
+  //const cp1 = Container[casePath]('a_number')
+  const cp1 = Container('a_number')
+  //const cp2 = Container[casePath]('a_string')
+  const cp2 = Container('a_string')
+  //const cp3 = Container[casePath]('another_number')
+  const cp3 = Container('another_number')
 
   t.deepEqual(cp1.extract(aNumber), { value: 42 })
   t.deepEqual(cp1.extract(aString), undefined)
@@ -468,8 +471,10 @@ test('CasePath concatenation', (t) => {
   type Parent = Case<'base', Base> | Case<'other', boolean>
   const Parent = makeEnum<Parent>()
 
-  const cp1 = Parent[casePath]('base').appending(Base[casePath]('value1'))
-  const cp2 = Parent[casePath]('base').appending(Base[casePath]('value2'))
+  //const cp1 = Parent[casePath]('base').appending(Base[casePath]('value1'))
+  const cp1 = Parent('base').appending(Base('value1'))
+  //const cp2 = Parent[casePath]('base').appending(Base[casePath]('value2'))
+  const cp2 = Parent('base').appending(Base('value2'))
 
   t.deepEqual(cp1.extract(Parent.base(Base.value1('hello'))), {
     value: 'hello',
@@ -487,7 +492,8 @@ test('CasePath concatenation', (t) => {
   type SuperParent = Case<'parent', Parent> | Case<'other'>
   const SuperParent = makeEnum<SuperParent>()
 
-  const cp3 = SuperParent[casePath]('parent').appending(cp1)
+  //const cp3 = SuperParent[casePath]('parent').appending(cp1)
+  const cp3 = SuperParent('parent').appending(cp1)
 
   t.deepEqual(
     cp3.extract(SuperParent.parent(Parent.base(Base.value1('hello')))),
