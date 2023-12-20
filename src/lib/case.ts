@@ -170,12 +170,58 @@ export type Choice<Name extends string, Payload = never> = [Payload] extends [
  * in a generic manner.
  *
  * You can use it to access the payload of an enum instance, but only if the
- * enum's case if that expected in the `CasePath`. You can also use it to embed
+ * enum's case is that expected in the `CasePath`. You can also use it to embed
  * a payload value into an enum instance.
  *
  * The power of the type lies in the fact that it is generic and can be used in
  * generic algorithms to refer to an enum's payload, without the need to
- * directly access it.
+ * directly access it. For example:
+ * ```typescript
+ * class PerformWork<ParentState extends EnumShape, ChildState> {
+ *   constructor(
+ *     private readonly parentWork: (parent: ParentState) => void,
+ *     private readonly childWork: (child: ChildState) => void,
+ *     private readonly toChildState: CasePath<ParentState, ChildState>,
+ *   ) { }
+ *
+ *   exec(parent: ParentState): void {
+ *     // this may or may not change or set the child state
+ *     this.parentWork(parent)
+ *
+ *     // try to extract the child state using the `CasePath`
+ *     const childState = this.toChildState.extract(parent)
+ *
+ *     if (childState) {
+ *       // if the child state was found, i.e. the case in `CasePath` matched
+ *       //  the state, perform additional work on it!
+ *       this.childWork(childState.value)
+ *     }
+ *   }
+ * }
+ *
+ * type Parent =
+ *   | Case<'stateA', StateA>
+ *   | Case<'stateB', StateB>
+ *   | Case<'stateC', StateC>
+ *
+ * const Parent = makeEnum<Parent>()
+ *
+ * const performedWork: string[] = []
+ * const work = new PerformWork(
+ *   (parent) => performedWork.push(parent.case),
+ *   (child) => performedWork.push(child.constructor.name),
+ *   Parent('stateB'),
+ * )
+ * work.exec(Parent.stateA(...))
+ * work.exec(Parent.stateB(...))
+ * work.exec(Parent.stateC(...))
+ *
+ * console.log(performedWork)
+ * // 'stateA'
+ * // 'stateB'
+ * // { ... the state of StateB ... }
+ * // 'stateC'
+ * ```
  */
 export interface CasePath<Enum extends EnumShape, Value> {
   appending: <Enum extends EnumShape, Value extends EnumShape, Leaf>(
