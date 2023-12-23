@@ -471,9 +471,7 @@ test('CasePath concatenation', (t) => {
   type Parent = Case<'base', Base> | Case<'other', boolean>
   const Parent = makeEnum<Parent>()
 
-  //const cp1 = Parent[casePath]('base').appending(Base[casePath]('value1'))
   const cp1 = Parent('base').appending(Base('value1'))
-  //const cp2 = Parent[casePath]('base').appending(Base[casePath]('value2'))
   const cp2 = Parent('base').appending(Base('value2'))
 
   t.deepEqual(cp1.extract(Parent.base(Base.value1('hello'))), {
@@ -492,7 +490,6 @@ test('CasePath concatenation', (t) => {
   type SuperParent = Case<'parent', Parent> | Case<'other'>
   const SuperParent = makeEnum<SuperParent>()
 
-  //const cp3 = SuperParent[casePath]('parent').appending(cp1)
   const cp3 = SuperParent('parent').appending(cp1)
 
   t.deepEqual(
