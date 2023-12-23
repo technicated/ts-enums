@@ -71,6 +71,7 @@ Utilities
 * [cases](#cases)
 * [CasesOf](#casesof)
 * [Choice](#choice)
+* [CasePath](#casepath)
 
 Extras
 
@@ -729,6 +730,137 @@ const r: Color = { case: 'red' }
 const g: Color = { case: 'green' }
 const b: Color = { case: 'blue' }
 ```
+
+## CasePath
+
+[☝️ Back to TOC](#table-of-contents)
+
+`CasePath`s are a way to navigate and modify enums in a type-safe manner, providing a structured approach to working with specific cases and their payloads.
+
+```typescript
+type Result<Success, Failure> =
+  | Case<'success', Success>
+  | Case<'failure', Failure>
+
+interface ResultHKT extends HKT2 {
+  readonly type: Result<this['_A'], this['_B']>
+}
+
+const Result = makeEnum2<ResultHKT>()
+const successPath = Result<number, string>('success')
+successPath.extract(Result.success(42))
+// { value: 42 }
+successPath.extract(Result.failure('bad'))
+// undefined
+```
+
+Case Paths can be used to `extract` a payload from an enum, or to `embed` a value inside an enum case.
+
+```typescript
+const extractionResult = successPath.extract(enumInstance)
+// { value: 42 }
+const newEnumInstance = successPath.embed(extractionResult.value)
+// { case: 'success', p: 42 }
+```
+
+The `extract` function returns a result of type `{ value: Payload } | undefined`, to allow developers to discriminate wether the extraction of the given `value` was successful or it failed. This is because in the exceptional case in which `Payload` were to be `undefined`, having a return value of `Payload | undefined` would be ambiguous.
+
+Case Paths can also be combined to work with nested enums:
+
+```typescript
+type Base =
+  | Case<'value1', string>
+  | Case<'value2', number>
+
+const Base = makeEnum<Base>()
+
+type Parent =
+  | Case<'base', Base>
+  | Case<'other', boolean>
+
+const Parent = makeEnum<Parent>()
+
+const casePath = Parent('base').appending(Base('value1'))
+
+casePath.extract(Parent.base(Base.value1('hello')))
+// { value: 'hello' }
+```
+
+Case Paths are closely related to **lenses**, a functional programming concept. Both Case Paths and lenses provide a way to focus on and modify parts of a larger structure. While lenses are a more general concept, Case Paths are specifically tailored for working with enums in this library.
+
+Case Paths' main use is as tools inside a library, to allow developers to modularize their code by encapsulating the logic for working with specific cases of their enums.
+
+For example:
+
+```typescript
+type ConfigurationOption =
+  | Case<'networkSettings', { url: string; timeout: number }>
+  | Case<'displaySettings', { theme: string; fontSize: number }>
+  | Case<'loggingSettings', { logLevel: string; enableDebug: boolean }>
+
+const ConfigurationOption = makeEnum<ConfigurationOption>()
+
+class Configuration {
+  constructor(public readonly options: ConfigurationOption[]) { }
+  
+  updateSettings<Value>(
+    path: CasePath<ConfigurationOption, Value>,
+    update: (original: Value) => Value
+  ): void {
+    for (let i = 0; i < this.options.length; i += 0) {
+      const extracted = path.extract(this.options[i])
+      
+      if (extracted) {
+        this.options[i] = path.embed(update(extracted.value))
+        break
+      }
+    }
+  }
+}
+
+const initialConfig = new Configuration([
+  ConfigurationOption.networkSettings({
+    url: 'https://example.com',
+    timeout: 30000,
+  }),
+  ConfigurationOption.displaySettings({ theme: 'Light', fontSize: 16 }),
+  ConfigurationOption.loggingSettings({
+    logLevel: 'Info',
+    enableDebug: false,
+  }),
+])
+
+initialConfig.updateSettings(
+  ConfigurationOption('networkSettings'),
+  ({ url }) => ({ url, timeout: 20000 })
+)
+
+initialConfig.updateSettings(
+  ConfigurationOption('loggingSettings'),
+  ({ logLevel }) => ({ logLevel, enableDebug: true })
+)
+
+// `initialConfig` is
+// options: [
+//   {
+//     case: 'networkSettings',
+//     p: { url: 'https://example.com', timeout: 20000 },
+//                                               ~~~~~
+//                               difference here ^
+//   },
+//   {
+//     case: 'displaySettings',
+//     p: { theme: 'Light', fontSize: 16 },
+//   },
+//   {
+//     case: 'loggingSettings',
+//     p: { logLevel: 'Info', enableDebug: true },
+//                                         ~~~~
+//                         difference here ^
+//   },
+// ]
+```
+
 
 # Extras
 

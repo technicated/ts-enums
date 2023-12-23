@@ -218,13 +218,13 @@ export type Choice<Name extends string, Payload = never> = [Payload] extends [
  *   ConfigurationOption('networkSettings'),
  *   ({ url }) => ({ url, timeout: 20000 })
  * )
- * 
+ *
  * initialConfig.updateSettings(
  *   ConfigurationOption('loggingSettings'),
  *   ({ logLevel }) => ({ logLevel, enableDebug: true })
  * )
- * 
- * // `initialConfig` is 
+ *
+ * // `initialConfig` is
  * // options: [
  * //   {
  * //     case: 'networkSettings',

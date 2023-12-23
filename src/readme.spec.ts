@@ -382,9 +382,9 @@ test('Plain Old JavaScript Objects', (t) => {
     interface User {
       email: string
       status:
-      | Case<'active', { verificationDate: Date }>
-      | Case<'blocked', { asOfDate: Date }>
-      | Case<'notVerified'>
+        | Case<'active', { verificationDate: Date }>
+        | Case<'blocked', { asOfDate: Date }>
+        | Case<'notVerified'>
     }
 
     // eslint-disable-next-line no-inner-declarations
@@ -437,9 +437,9 @@ test('Plain Old JavaScript Objects', (t) => {
     interface User {
       email: string
       status:
-      | Choice<'active', { verificationDate: Date }>
-      | Choice<'blocked', { asOfDate: Date }>
-      | Choice<'notVerified'>
+        | Choice<'active', { verificationDate: Date }>
+        | Choice<'blocked', { asOfDate: Date }>
+        | Choice<'notVerified'>
     }
 
     // eslint-disable-next-line no-inner-declarations
@@ -631,6 +631,21 @@ test('Utilities, Choice', (t) => {
     t.truthy(g)
     t.truthy(b)
   }
+})
+
+test('Utilities, CasePath', (t) => {
+  type Result<Success, Failure> =
+    | Case<'success', Success>
+    | Case<'failure', Failure>
+
+  interface ResultHKT extends HKT2 {
+    readonly type: Result<this['_A'], this['_B']>
+  }
+
+  const Result = makeEnum2<ResultHKT>()
+  const successPath = Result<number, string>('success')
+  t.deepEqual(successPath.extract(Result.success(42)), { value: 42 })
+  t.deepEqual(successPath.extract(Result.failure('bad')), undefined)
 })
 
 test('But why do I need enums?', (t) => {
@@ -922,7 +937,7 @@ test('But why do I need enums? - Example #2', (t) => {
       public isShowingEditModal: boolean = false
       public scratchItemForEditing: Item | null = null
 
-      constructor(public item: Item) { }
+      constructor(public item: Item) {}
 
       cancelItemDeletionButtonClicked(): void {
         this.isShowingDeleteAlert = false
@@ -1001,7 +1016,7 @@ test('But why do I need enums? - Example #2', (t) => {
     class ItemDetailViewModel {
       public presentation: Presentation | null = null
 
-      constructor(public item: Item) { }
+      constructor(public item: Item) {}
 
       cancelItemDeletionButtonClicked(): void {
         this.presentation = null
@@ -1074,7 +1089,7 @@ test('But why do I need enums? - Example #3', async (t) => {
       isLoading: boolean = false
       isSuccess: boolean | null = null
 
-      constructor(public url: string) { }
+      constructor(public url: string) {}
 
       async performLoad(): Promise<Item[]> {
         if (!this.isLoading) {
@@ -1159,7 +1174,7 @@ test('But why do I need enums? - Example #3', async (t) => {
     class DataLoader<Item> {
       loadStatus: DataLoadingStatus<Item> = DataLoadingStatus.idle()
 
-      constructor(public url: string) { }
+      constructor(public url: string) {}
 
       async performLoad(): Promise<Item[]> {
         switch (this.loadStatus.case) {
@@ -1414,7 +1429,7 @@ test('gg', (t) => {
   const ConfigurationOption = makeEnum<ConfigurationOption>()
 
   class Configuration {
-    constructor(public readonly options: ConfigurationOption[]) { }
+    constructor(public readonly options: ConfigurationOption[]) {}
 
     updateSettings<Value>(
       path: CasePath<ConfigurationOption, Value>,
