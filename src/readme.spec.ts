@@ -1,6 +1,6 @@
 import test from 'ava'
 import { match } from 'ts-pattern'
-import { Case, cases, Cast, Choice } from './lib/case'
+import { Case, CasePath, cases, Cast, Choice } from './lib/case'
 import { HKT, HKT2 } from './lib/hkt'
 import { makeEnum } from './lib/make-enum-0/make-enum'
 import { makeEnum1 } from './lib/make-enum-1/make-enum'
@@ -382,9 +382,9 @@ test('Plain Old JavaScript Objects', (t) => {
     interface User {
       email: string
       status:
-        | Case<'active', { verificationDate: Date }>
-        | Case<'blocked', { asOfDate: Date }>
-        | Case<'notVerified'>
+      | Case<'active', { verificationDate: Date }>
+      | Case<'blocked', { asOfDate: Date }>
+      | Case<'notVerified'>
     }
 
     // eslint-disable-next-line no-inner-declarations
@@ -437,9 +437,9 @@ test('Plain Old JavaScript Objects', (t) => {
     interface User {
       email: string
       status:
-        | Choice<'active', { verificationDate: Date }>
-        | Choice<'blocked', { asOfDate: Date }>
-        | Choice<'notVerified'>
+      | Choice<'active', { verificationDate: Date }>
+      | Choice<'blocked', { asOfDate: Date }>
+      | Choice<'notVerified'>
     }
 
     // eslint-disable-next-line no-inner-declarations
@@ -922,7 +922,7 @@ test('But why do I need enums? - Example #2', (t) => {
       public isShowingEditModal: boolean = false
       public scratchItemForEditing: Item | null = null
 
-      constructor(public item: Item) {}
+      constructor(public item: Item) { }
 
       cancelItemDeletionButtonClicked(): void {
         this.isShowingDeleteAlert = false
@@ -1001,7 +1001,7 @@ test('But why do I need enums? - Example #2', (t) => {
     class ItemDetailViewModel {
       public presentation: Presentation | null = null
 
-      constructor(public item: Item) {}
+      constructor(public item: Item) { }
 
       cancelItemDeletionButtonClicked(): void {
         this.presentation = null
@@ -1074,7 +1074,7 @@ test('But why do I need enums? - Example #3', async (t) => {
       isLoading: boolean = false
       isSuccess: boolean | null = null
 
-      constructor(public url: string) {}
+      constructor(public url: string) { }
 
       async performLoad(): Promise<Item[]> {
         if (!this.isLoading) {
@@ -1159,7 +1159,7 @@ test('But why do I need enums? - Example #3', async (t) => {
     class DataLoader<Item> {
       loadStatus: DataLoadingStatus<Item> = DataLoadingStatus.idle()
 
-      constructor(public url: string) {}
+      constructor(public url: string) { }
 
       async performLoad(): Promise<Item[]> {
         switch (this.loadStatus.case) {
@@ -1403,4 +1403,60 @@ test('ts-pattern', (t) => {
       { counter: 0, numberFact: null },
     ],
   })
+})
+
+test('gg', (t) => {
+  type ConfigurationOption =
+    | Case<'networkSettings', { url: string; timeout: number }>
+    | Case<'displaySettings', { theme: string; fontSize: number }>
+    | Case<'loggingSettings', { logLevel: string; enableDebug: boolean }>
+
+  const ConfigurationOption = makeEnum<ConfigurationOption>()
+
+  class Configuration {
+    constructor(public readonly options: ConfigurationOption[]) { }
+
+    updateSettings<Value>(
+      path: CasePath<ConfigurationOption, Value>,
+      update: (original: Value) => Value
+    ): void {
+      for (let i = 0; i < this.options.length; i += 0) {
+        const extracted = path.extract(this.options[i])
+
+        if (extracted) {
+          this.options[i] = path.embed(update(extracted.value))
+          break
+        }
+      }
+    }
+  }
+
+  const initialConfig = new Configuration([
+    ConfigurationOption.networkSettings({
+      url: 'https://example.com',
+      timeout: 30000,
+    }),
+    ConfigurationOption.displaySettings({ theme: 'Light', fontSize: 16 }),
+    ConfigurationOption.loggingSettings({
+      logLevel: 'Info',
+      enableDebug: false,
+    }),
+  ])
+
+  initialConfig.updateSettings(
+    ConfigurationOption('networkSettings'),
+    ({ url }) => ({ url, timeout: 20000 })
+  )
+
+  t.deepEqual(initialConfig.options, [
+    ConfigurationOption.networkSettings({
+      url: 'https://example.com',
+      timeout: 20000,
+    }),
+    ConfigurationOption.displaySettings({ theme: 'Light', fontSize: 16 }),
+    ConfigurationOption.loggingSettings({
+      logLevel: 'Info',
+      enableDebug: false,
+    }),
+  ])
 })

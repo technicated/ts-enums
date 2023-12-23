@@ -177,50 +177,72 @@ export type Choice<Name extends string, Payload = never> = [Payload] extends [
  * generic algorithms to refer to an enum's payload, without the need to
  * directly access it. For example:
  * ```typescript
- * class PerformWork<ParentState extends EnumShape, ChildState> {
- *   constructor(
- *     private readonly parentWork: (parent: ParentState) => void,
- *     private readonly childWork: (child: ChildState) => void,
- *     private readonly toChildState: CasePath<ParentState, ChildState>,
- *   ) { }
+ * type ConfigurationOption =
+ *   | Case<'networkSettings', { url: string; timeout: number }>
+ *   | Case<'displaySettings', { theme: string; fontSize: number }>
+ *   | Case<'loggingSettings', { logLevel: string; enableDebug: boolean }>
  *
- *   exec(parent: ParentState): void {
- *     // this may or may not change or set the child state
- *     this.parentWork(parent)
+ * const ConfigurationOption = makeEnum<ConfigurationOption>()
  *
- *     // try to extract the child state using the `CasePath`
- *     const childState = this.toChildState.extract(parent)
+ * class Configuration {
+ *   constructor(public readonly options: ConfigurationOption[]) { }
  *
- *     if (childState) {
- *       // if the child state was found, i.e. the case in `CasePath` matched
- *       //  the state, perform additional work on it!
- *       this.childWork(childState.value)
+ *   updateSettings<Value>(
+ *     path: CasePath<ConfigurationOption, Value>,
+ *     update: (original: Value) => Value
+ *   ): void {
+ *     for (let i = 0; i < this.options.length; i += 0) {
+ *       const extracted = path.extract(this.options[i])
+ *
+ *       if (extracted) {
+ *         this.options[i] = path.embed(update(extracted.value))
+ *         break
+ *       }
  *     }
  *   }
  * }
  *
- * type Parent =
- *   | Case<'stateA', StateA>
- *   | Case<'stateB', StateB>
- *   | Case<'stateC', StateC>
+ * const initialConfig = new Configuration([
+ *   ConfigurationOption.networkSettings({
+ *     url: 'https://example.com',
+ *     timeout: 30000,
+ *   }),
+ *   ConfigurationOption.displaySettings({ theme: 'Light', fontSize: 16 }),
+ *   ConfigurationOption.loggingSettings({
+ *     logLevel: 'Info',
+ *     enableDebug: false,
+ *   }),
+ * ])
  *
- * const Parent = makeEnum<Parent>()
- *
- * const performedWork: string[] = []
- * const work = new PerformWork(
- *   (parent) => performedWork.push(parent.case),
- *   (child) => performedWork.push(child.constructor.name),
- *   Parent('stateB'),
+ * initialConfig.updateSettings(
+ *   ConfigurationOption('networkSettings'),
+ *   ({ url }) => ({ url, timeout: 20000 })
  * )
- * work.exec(Parent.stateA(...))
- * work.exec(Parent.stateB(...))
- * work.exec(Parent.stateC(...))
- *
- * console.log(performedWork)
- * // 'stateA'
- * // 'stateB'
- * // { ... the state of StateB ... }
- * // 'stateC'
+ * 
+ * initialConfig.updateSettings(
+ *   ConfigurationOption('loggingSettings'),
+ *   ({ logLevel }) => ({ logLevel, enableDebug: true })
+ * )
+ * 
+ * // `initialConfig` is 
+ * // options: [
+ * //   {
+ * //     case: 'networkSettings',
+ * //     p: { url: 'https://example.com', timeout: 20000 },
+ * //                                               ~~~~~
+ * //                               difference here ^
+ * //   },
+ * //   {
+ * //     case: 'displaySettings',
+ * //     p: { theme: 'Light', fontSize: 16 },
+ * //   },
+ * //   {
+ * //     case: 'loggingSettings',
+ * //     p: { logLevel: 'Info', enableDebug: true },
+ * //                                         ~~~~
+ * //                         difference here ^
+ * //   },
+ * // ]
  * ```
  */
 export interface CasePath<Enum extends EnumShape, Value> {
