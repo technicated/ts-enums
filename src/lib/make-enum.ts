@@ -48,10 +48,6 @@ class CasePathImpl<Root extends EnumShape, Value> {
 
     return undefined
   }
-
-  params() {
-    return this
-  }
 }
 
 type MakeCasePathFn = {
