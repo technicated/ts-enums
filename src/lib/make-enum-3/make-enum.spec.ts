@@ -378,3 +378,38 @@ test('CasePath', (t) => {
     Container.object({ a: 'hi', b: -1, c: 'hi' })
   )
 })
+
+test('CasePath modification', (t) => {
+  type Container<A, B, C> =
+    | Case<'primitive', number>
+    | Case<'object', { a: A; b: B; c: C }>
+
+  interface ContainerHKT extends HKT3 {
+    readonly type: Container<this['_A'], this['_B'], this['_C']>
+  }
+
+  const Container = makeEnum3<ContainerHKT>()
+
+  t.deepEqual(
+    Container('primitive').modify(Container.primitive(42), (n) => n * n),
+    Container.primitive(1764)
+  )
+
+  t.deepEqual(
+    Container('object').modify(
+      Container.object({ a: 'a', b: 'b', c: 'c' }),
+      (obj) => ({ ...obj, a: obj.a + '!' })
+    ),
+    Container.object({ a: 'a!', b: 'b', c: 'c' })
+  )
+
+  t.deepEqual(
+    Container('object').modify(
+      Container.object({ a: 'a', b: 'b', c: 'c' }),
+      (obj) => {
+        obj.c += '!'
+      }
+    ),
+    Container.object({ a: 'a', b: 'b', c: 'c!' })
+  )
+})

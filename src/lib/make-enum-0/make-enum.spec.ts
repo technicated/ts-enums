@@ -501,3 +501,32 @@ test('CasePath concatenation', (t) => {
     SuperParent.parent(Parent.base(Base.value1('hi')))
   )
 })
+
+test('CasePath modification', (t) => {
+  interface User {
+    name: string
+  }
+
+  type Container = Case<'primitive', number> | Case<'object', User>
+
+  const Container = makeEnum<Container>()
+
+  t.deepEqual(
+    Container('primitive').modify(Container.primitive(42), (n) => n * n),
+    Container.primitive(1764)
+  )
+
+  t.deepEqual(
+    Container('object').modify(Container.object({ name: 'name' }), (user) => ({
+      name: user.name + '!',
+    })),
+    Container.object({ name: 'name!' })
+  )
+
+  t.deepEqual(
+    Container('object').modify(Container.object({ name: 'name' }), (user) => {
+      user.name += '!'
+    }),
+    Container.object({ name: 'name!' })
+  )
+})
