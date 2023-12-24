@@ -1,13 +1,6 @@
 import { Case, CasePath, cases, EnumShape } from './case'
 import { unit } from './unit'
 
-function opt<U, V>(
-  value: NonNullable<U> | undefined,
-  fn: (a: NonNullable<U>) => V
-): V | undefined {
-  return value !== undefined ? fn(value) : undefined
-}
-
 class CasePathImpl<Root extends EnumShape, Value> {
   static from<Root extends Case<string, Value>, Value>(
     enumCtors: Record<Root['case'], (payload: Value) => Root>,
@@ -29,7 +22,13 @@ class CasePathImpl<Root extends EnumShape, Value> {
     other: CasePath<Value, Leaf>
   ): CasePathImpl<Root, Leaf> {
     return new CasePathImpl(
-      (root) => opt(this.extract(root), ({ value }) => other.extract(value)),
+      (root) => {
+        const extractionResult = this.extract(root)
+
+        return extractionResult
+          ? other.extract(extractionResult.value)
+          : undefined
+      },
       (value) => this.embed(other.embed(value))
     )
   }

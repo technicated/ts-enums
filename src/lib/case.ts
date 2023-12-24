@@ -175,7 +175,8 @@ export type Choice<Name extends string, Payload = never> = [Payload] extends [
  *
  * The power of the type lies in the fact that it is generic and can be used in
  * generic algorithms to refer to an enum's payload, without the need to
- * directly access it. For example:
+ * explicitly test and directly access it. For example:
+ *
  * ```typescript
  * type ConfigurationOption =
  *   | Case<'networkSettings', { url: string; timeout: number }>
