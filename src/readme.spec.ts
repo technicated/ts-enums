@@ -643,9 +643,99 @@ test('Utilities, CasePath', (t) => {
   }
 
   const Result = makeEnum2<ResultHKT>()
+
   const successPath = Result<number, string>('success')
   t.deepEqual(successPath.extract(Result.success(42)), { value: 42 })
   t.deepEqual(successPath.extract(Result.failure('bad')), undefined)
+
+  const enumInstance = Result.success<number, string>(42)
+  const extractionResult = successPath.extract(enumInstance) as {
+    value: number
+  }
+  t.deepEqual(extractionResult, { value: 42 })
+  const newEnumInstance = successPath.embed(extractionResult.value)
+  t.deepEqual(newEnumInstance, Result.success(42))
+
+  {
+    const newEnumInstance = successPath.modify(enumInstance, (n) => n * n)
+    t.deepEqual(newEnumInstance, Result.success(1764))
+  }
+
+  type Base = Case<'value1', string> | Case<'value2', number>
+
+  const Base = makeEnum<Base>()
+
+  type Parent = Case<'base', Base> | Case<'other', boolean>
+
+  const Parent = makeEnum<Parent>()
+
+  const casePath = Parent('base').appending(Base('value1'))
+
+  t.deepEqual(casePath.extract(Parent.base(Base.value1('hello'))), {
+    value: 'hello',
+  })
+
+  type ConfigurationOption =
+    | Case<'networkSettings', { url: string; timeout: number }>
+    | Case<'displaySettings', { theme: string; fontSize: number }>
+    | Case<'loggingSettings', { logLevel: string; enableDebug: boolean }>
+
+  const ConfigurationOption = makeEnum<ConfigurationOption>()
+
+  class Configuration {
+    constructor(public readonly options: ConfigurationOption[]) {}
+
+    updateSettings<Value>(
+      path: CasePath<ConfigurationOption, Value>,
+      update: (original: Value) => Value
+    ): void {
+      for (let i = 0; i < this.options.length; i += 1) {
+        const extracted = path.extract(this.options[i])
+
+        if (extracted) {
+          this.options[i] = path.embed(update(extracted.value))
+          break
+        }
+      }
+    }
+  }
+
+  const initialConfig = new Configuration([
+    ConfigurationOption.networkSettings({
+      url: 'https://example.com',
+      timeout: 30000,
+    }),
+    ConfigurationOption.displaySettings({ theme: 'Light', fontSize: 16 }),
+    ConfigurationOption.loggingSettings({
+      logLevel: 'Info',
+      enableDebug: false,
+    }),
+  ])
+
+  initialConfig.updateSettings(
+    ConfigurationOption('networkSettings'),
+    ({ url }) => ({ url, timeout: 20000 })
+  )
+
+  initialConfig.updateSettings(
+    ConfigurationOption('loggingSettings'),
+    ({ logLevel }) => ({ logLevel, enableDebug: true })
+  )
+
+  t.deepEqual(
+    initialConfig,
+    new Configuration([
+      ConfigurationOption.networkSettings({
+        url: 'https://example.com',
+        timeout: 20000,
+      }),
+      ConfigurationOption.displaySettings({ theme: 'Light', fontSize: 16 }),
+      ConfigurationOption.loggingSettings({
+        logLevel: 'Info',
+        enableDebug: true,
+      }),
+    ])
+  )
 })
 
 test('But why do I need enums?', (t) => {

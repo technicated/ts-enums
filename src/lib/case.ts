@@ -191,7 +191,7 @@ export type Choice<Name extends string, Payload = never> = [Payload] extends [
  *     path: CasePath<ConfigurationOption, Value>,
  *     update: (original: Value) => Value
  *   ): void {
- *     for (let i = 0; i < this.options.length; i += 0) {
+ *     for (let i = 0; i < this.options.length; i += 1) {
  *       const extracted = path.extract(this.options[i])
  *
  *       if (extracted) {

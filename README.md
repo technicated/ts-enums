@@ -765,6 +765,15 @@ const newEnumInstance = successPath.embed(extractionResult.value)
 
 The `extract` function returns a result of type `{ value: Payload } | undefined`, to allow developers to discriminate wether the extraction of the given `value` was successful or it failed. This is because in the exceptional case in which `Payload` were to be `undefined`, having a return value of `Payload | undefined` would be ambiguous.
 
+In some cases you want to perform the two operations one after another, so there's another function `modify` to perform just that:
+
+```typescript
+const newEnumInstance = successPath.modify(enumInstance, (n) => n * n)
+// { case: 'success', p: 1764 }
+```
+
+You can return the updated value from the update function, or you can modify the payload in place, for example to update only a property.
+
 Case Paths can also be combined to work with nested enums:
 
 ```typescript
@@ -807,7 +816,7 @@ class Configuration {
     path: CasePath<ConfigurationOption, Value>,
     update: (original: Value) => Value
   ): void {
-    for (let i = 0; i < this.options.length; i += 0) {
+    for (let i = 0; i < this.options.length; i += 1) {
       const extracted = path.extract(this.options[i])
       
       if (extracted) {
