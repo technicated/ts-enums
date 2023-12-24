@@ -252,4 +252,8 @@ export interface CasePath<Enum extends EnumShape, Value> {
   ) => CasePath<Enum, Leaf>
   extract: (root: Enum) => { value: Value } | undefined
   embed: (value: Value) => Enum
+  modify: (
+    root: Enum,
+    update: (value: Value) => Value | void
+  ) => Enum | undefined
 }

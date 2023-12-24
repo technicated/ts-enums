@@ -34,6 +34,22 @@ class CasePathImpl<Root extends EnumShape, Value> {
     )
   }
 
+  modify(root: Root, update: (value: Value) => Value | void): Root | undefined {
+    const extractionResult = this.extract(root)
+
+    if (extractionResult) {
+      let updatedValue = update(extractionResult.value)
+
+      if (updatedValue === undefined) {
+        updatedValue = extractionResult.value
+      }
+
+      return this.embed(updatedValue)
+    }
+
+    return undefined
+  }
+
   params() {
     return this
   }
