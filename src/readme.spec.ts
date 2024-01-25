@@ -6,6 +6,7 @@ import { makeEnum } from './lib/make-enum-0/make-enum'
 import { makeEnum1 } from './lib/make-enum-1/make-enum'
 import { makeEnum2 } from './lib/make-enum-2/make-enum'
 import { CasesOf } from './lib/make-enum-2/types'
+import { thisHelper } from './lib/this-helper'
 import { unit } from './lib/unit'
 
 const console = {
@@ -129,140 +130,131 @@ test('Adding a payload', (t) => {
   t.is(log, 'people names are: user1, user2')
 })
 
-// test('Adding a prototype, 1', (t) => {
-//   console.reset()
+test('Adding a prototype', (t) => {
+  console.reset()
 
-//   interface AnimalProto {
-//     makeNoise(): void
-//   }
+  class AnimalProto {
+    // Why the need for `this: Animal`? This is explained later
+    makeNoise(this: Animal): void {
+      switch (this.case) {
+        case 'dog':
+          console.log('bark!')
+          break
+        case 'cat':
+          console.log('meow!')
+          break
+        case 'duck':
+          console.log('quack!')
+          break
+      }
+    }
+  }
 
-//   type Animal = AnimalProto & (Case<'dog'> | Case<'cat'> | Case<'duck'>)
+  type Animal = AnimalProto & (Case<'dog'> | Case<'cat'> | Case<'duck'>)
 
-//   const Animal = makeEnum<Animal>({
-//     makeProto: () => ({
-//       // implement this method as a traditional function and not as an arrow function, so `this` will be bound to the instance of `Animal` on which this method is called
-//       makeNoise() {
-//         switch (this.case) {
-//           case 'dog':
-//             console.log('bark!')
-//             break
-//           case 'cat':
-//             console.log('meow!')
-//             break
-//           case 'duck':
-//             console.log('quack!')
-//             break
-//         }
-//       },
-//     }),
-//   })
+  const Animal = makeEnum<Animal>({
+    proto: AnimalProto,
+  })
 
-//   Animal.dog().makeNoise() // bark!
-//   Animal.cat().makeNoise() // meow!
-//   Animal.duck().makeNoise() // quack!
+  Animal.dog().makeNoise() // bark!
+  Animal.cat().makeNoise() // meow!
+  Animal.duck().makeNoise() // quack!
 
-//   t.deepEqual(console.logs, ['bark!', 'meow!', 'quack!'])
-// })
+  t.deepEqual(console.logs, ['bark!', 'meow!', 'quack!'])
+})
 
-// test('Adding a prototype, 2', (t) => {
-//   interface AnimalProto {
-//     makeChild(): Animal
-//   }
+test('Prototype, getters and setters', (t) => {
+  class ContainerProto {
+    get area(): number {
+      const self = thisHelper<Container>(this)
 
-//   type Animal = AnimalProto & (Case<'dog'> | Case<'cat'> | Case<'duck'>)
+      switch (self.case) {
+        case 'circle':
+          return 3.14 * self.p.radius * self.p.radius
+        case 'rectangle':
+          return self.p.side1 * self.p.side2
+        case 'square':
+          return self.p.side * self.p.side
+      }
+    }
+  }
 
-//   const Animal = makeEnum<Animal>({
-//     //          v here's the difference
-//     makeProto: (Animal) => ({
-//       makeChild() {
-//         // inside here, `Animal` now refers to the parameter of `makeProto` instead of the global `Animal` const
-//         switch (this.case) {
-//           case 'dog':
-//             return Animal.dog()
-//           case 'cat':
-//             return Animal.cat()
-//           case 'duck':
-//             return Animal.duck()
-//         }
-//       },
-//     }),
-//   })
+  type Container = ContainerProto &
+    (
+      | Case<'circle', { radius: number }>
+      | Case<'rectangle', { side1: number; side2: number }>
+      | Case<'square', { side: number }>
+    )
 
-//   t.deepEqual(Animal.cat().makeChild(), Animal.cat())
-//   t.deepEqual(Animal.dog().makeChild(), Animal.dog())
-//   t.deepEqual(Animal.duck().makeChild(), Animal.duck())
-// })
+  const Container = makeEnum<Container>({ proto: ContainerProto })
 
-// test('Adding static methods', (t) => {
-//   const randomValues = [0.7, 0.1, 0.5]
-//   const random = () => randomValues.pop() ?? 0
+  t.is(Container.circle({ radius: 10 }).area, 314)
+  t.is(Container.rectangle({ side1: 10, side2: 20 }).area, 200)
+  t.is(Container.square({ side: 10 }).area, 100)
+})
 
-//   type Color = Case<'red'> | Case<'green'> | Case<'blue'>
+test('Adding static methods', (t) => {
+  const randomValues = [0.7, 0.1, 0.5]
+  const random = () => randomValues.pop() ?? 0
 
-//   interface ColorType {
-//     random(): Color
-//   }
+  type Color = Case<'red'> | Case<'green'> | Case<'blue'>
 
-//   const Color = makeEnum<Color, ColorType>({
-//     makeType: (Color) => ({
-//       random() {
-//         if (random() > 0.3) {
-//           return Color.red() // we prefer red!
-//         }
+  class ColorType {
+    random(): Color {
+      if (random() > 0.3) {
+        return Color.red() // we prefer red!
+      }
 
-//         return random() < 0.5 ? Color.green() : Color.blue()
-//       },
-//     }),
-//   })
+      return random() < 0.5 ? Color.green() : Color.blue()
+    }
+  }
 
-//   t.deepEqual(Color.random(), Color.red())
-//   t.deepEqual(Color.random(), Color.blue())
-// })
+  const Color = makeEnum<Color, ColorType>({ type: ColorType })
 
-// test('Using generics', (t) => {
-//   interface MaybeProto<T> {
-//     map<U>(transform: (value: T) => U): Maybe<U>
-//   }
+  t.deepEqual(Color.random(), Color.red())
+  t.deepEqual(Color.random(), Color.blue())
+})
 
-//   type Maybe<T> = MaybeProto<T> & (Case<'none'> | Case<'some', T>)
+test('Using generics', (t) => {
+  class MaybeProto<T> {
+    map<U>(this: Maybe<T>, transform: (value: T) => U): Maybe<U> {
+      switch (this.case) {
+        case 'none':
+          return Maybe.none()
+        case 'some':
+          return Maybe.some(transform(this.p))
+      }
+    }
+  }
 
-//   interface MaybeHKT extends HKT {
-//     readonly type: Maybe<this['_A']>
-//   }
+  type Maybe<T> = MaybeProto<T> & (Case<'none'> | Case<'some', T>)
 
-//   interface MaybeType {
-//     fromValue<T>(value: T): Maybe<NonNullable<T>>
-//   }
+  interface MaybeHKT extends HKT {
+    readonly type: Maybe<this['_A']>
+  }
 
-//   const Maybe = makeEnum1<MaybeHKT, MaybeType>({
-//     makeProto: (Maybe) => ({
-//       map(transform) {
-//         switch (this.case) {
-//           case 'none':
-//             return Maybe.none()
-//           case 'some':
-//             return Maybe.some(transform(this.p))
-//         }
-//       },
-//     }),
-//     makeType: (Maybe) => ({
-//       fromValue(value) {
-//         return value !== null && value !== undefined
-//           ? Maybe.some(value)
-//           : Maybe.none()
-//       },
-//     }),
-//   })
+  class MaybeType {
+    fromValue<T>(value: T): Maybe<NonNullable<T>> {
+      return value !== null && value !== undefined
+        ? Maybe.some(value)
+        : Maybe.none()
+    }
+  }
 
-//   t.deepEqual(Maybe.fromValue(42), Maybe.some(42))
-//   t.deepEqual(Maybe.fromValue(null), Maybe.none())
-//   t.deepEqual(Maybe.fromValue(undefined), Maybe.none())
+  const Maybe = makeEnum1<MaybeHKT, MaybeType>({
+    proto: MaybeProto,
+    type: MaybeType,
+  })
 
-//   t.deepEqual(
-//     Maybe.some(['Hello', 'world']).map((arr) => `${arr.join(', ')}!`),
-//     Maybe.some('Hello, world!')
-//   )
-// })
+  t.deepEqual(Maybe.fromValue(42), Maybe.some(42))
+  t.deepEqual(Maybe.fromValue(null), Maybe.none())
+  t.deepEqual(Maybe.fromValue(undefined), Maybe.none())
+
+  t.deepEqual(
+    Maybe.some(['Hello', 'world']).map((arr) => `${arr.join(', ')}!`),
+    Maybe.some('Hello, world!')
+  )
+})
 
 test('Plain Old JavaScript Objects', (t) => {
   {
@@ -879,8 +871,8 @@ test('But why do I need enums? - Example #1', (t) => {
 
   {
     class StatusProto {
-      isInStock(this: Status): boolean {
-        switch (this.case) {
+      get isInStock(): boolean {
+        switch (thisHelper<Status>(this).case) {
           case 'inStock':
             return true
           case 'outOfStock':
@@ -904,7 +896,7 @@ test('But why do I need enums? - Example #1', (t) => {
       status: Status
 
       get isInStock(): boolean {
-        return this.status.isInStock()
+        return this.status.isInStock
       }
 
       static inStock(name: string, quantity: number): Product {

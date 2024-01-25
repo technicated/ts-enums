@@ -60,7 +60,7 @@ Main topics
 * [Enum basics](#enum-basics)
 * [Adding a payload](#adding-a-payload)
 * [Adding a prototype](#adding-a-prototype)
-  * [Recursive definition issue](#prototype-recursive-definition-issue)
+  * [Getters and setters](#prototype-getters-and-setters)
 * [Adding static methods](#adding-static-methods)
 * [Using generics](#using-generics)
 * [Plain Old JavaScript Objects](#plain-old-javascript-objects)
@@ -235,13 +235,28 @@ One last note: a payload-less enum is not actually "empty"! It does, in fact, co
 
 [☝️ Back to TOC](#table-of-contents)
 
-You might want to add methods to your enum, like you do on objects. To do this, you perform two steps: first, you declare an interface to define the shape of the prototype, calling this interface `<MyEnumName>Proto` (**_convention #3_**), then you add this interface to the main type declaration and implement it using the first parameter of the `makeEnum` helper function:
+You might want to add methods to your enum, like you do on objects. To do this, you perform two steps: first, you declare a class to define the prototype, calling this class `<MyEnumName>Proto` (**_convention #3_**), then you use the class (as a type) to augment the base definition of your Enum and pass the class reference to first parameter of the `makeEnum` helper function:
 
 ```typescript
-interface AnimalProto {
-  makeNoise(): void  
+class AnimalProto {
+  // Why the need for `this: Animal`? This is explained later
+  makeNoise(this: Animal): void {
+    switch (this.case) {
+      case 'dog':
+        console.log('bark!')
+        break
+      case 'cat':
+        console.log('meow!')
+        break
+      case 'duck':
+        console.log('quack!')
+        break
+    }
+  }
 }
 
+// use the class as a type to augment the basic enum shape
+//            vvvvvvvvvvv
 type Animal = AnimalProto & (
   | Case<'dog'>
   | Case<'cat'>
@@ -249,22 +264,7 @@ type Animal = AnimalProto & (
 )
 
 const Animal = makeEnum<Animal>({
-  makeProto: () => ({
-    // implement this method as a traditional function and not as an arrow function, so `this` will be bound to the instance of `Animal` on which this method is called
-    makeNoise() {
-      switch (this.case) {
-        case 'dog':
-          console.log('bark!')
-          break
-        case 'cat':
-          console.log('meow!')
-          break
-        case 'duck':
-          console.log('quack!')
-          break
-      }
-    },
-  }),
+  proto: AnimalProto, // pass the class to `makeEnum`
 })
 
 Animal.dog().makeNoise() // bark!
@@ -272,80 +272,57 @@ Animal.cat().makeNoise() // meow!
 Animal.duck().makeNoise() // quack!
 ```
 
-It is important to note that you need to use a function to create the prototype, instead of just specifying it as a plain object.
+It is important to note that you need to specify the `this` type of every method of the prototype class as `this: <MyEnumName>`. This is because the library will create an instance of the prototype class and set it as, well, the prototype for every instance of the enum that you create, so `this` will always be bound to that instance.
 
-The reason has to to do with _generic parameters_, which we'll talk about in a subsequent section. In brief, when using generics, you cannot declare the prototype as an object because then you have no generic type(s) to pass to your generic enum type. By using a function instead, the library is able to sneak in the generic argument(s) for you!
+Doing this for every method can be a minor annoyance, but one that overall makes the library easier to use, addressing old issues like the need to use the function `makeProto` to create the prototype object (that was also separated from the type) and the recursive definition issue, which happened when you had a method return a value of your enum type and required the library to pass a copy of the enum constructors to the `makeProto` function.
 
-### Prototype: recursive definition issue
+### Prototype: getters and setters
 
 [☝️ Back to TOC](#table-of-contents)
 
-Defining a prototype this way brings an issue: if you need to define a method using the enum type itself (as a part of the signature or the method body), you will get the TypeScript error `"'your enum type' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer"`.
+Unfortunately, at the moment TypeScript does not allow programmers to specify the type of `this` in getters and setters, so the suggestion is to always use methods when defining the prototype class.
+
+However, the library provides a workaround for these times when using a getter / setter is more ergonomic or actually required: the `thisHelper` function can be used to force the type of `this` inside getters and setters.
 
 ```typescript
-interface AnimalProto {
-  makeChild(): Animal
+class ContainerProto {
+  get area(): number {
+    const self = thisHelper<Container>(this)
+
+    switch (self.case) {
+      case 'circle':
+        return 3.14 * self.p.radius * self.p.radius
+      case 'rectangle':
+        return self.p.side1 * self.p.side2
+      case 'square':
+        return self.p.side * self.p.side
+    }
+  }
 }
 
-type Animal = AnimalProto & (
-  | Case<'dog'>
-  | Case<'cat'>
-  | Case<'duck'>
+type Container = ContainerProto & (
+  | Case<'circle', { radius: number }>
+  | Case<'rectangle', { side1: number; side2: number }>
+  | Case<'square', { side: number }>
 )
 
-// 'Animal' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer
-const Animal = makeEnum<Animal>({
-  makeProto: () => ({
-    makeChild() {
-      switch (this.case) {
-        case 'dog': return Animal.dog()
-        case 'cat': return Animal.cat()
-        case 'duck': return Animal.duck()
-      }
-    },
-  })
-})
+const Container = makeEnum<Container>({ proto: ContainerProto })
+
+Container.circle({ radius: 10 }).area
+// output: 314
+Container.rectangle({ side1: 10, side2: 20 }).area
+// output: 200
+Container.square({ side: 10 }).area
+// output: 100
 ```
 
-Adding the return type to `makeChild` is trivial in the case of generic-less enums, but when generics are involved you would be missing the generic argument to pass to your generic enum. You can declare your own generic parameter, but the definition of the prototype will be a little bit obscured by all the notation. So, it's better to find another solution.
-
-The solution is that you can receive a copy of the enum you are building as a parameter of the `makeProto` function, so that you can refer to that symbol instead of the value you are creating. It is **_convention #4_** to call this symbol with the same name of the enum.
-
-```typescript
-interface AnimalProto {
-  makeChild(): Animal
-}
-
-type Animal = AnimalProto & (
-  | Case<'dog'>
-  | Case<'cat'>
-  | Case<'duck'>
-)
-
-const Animal = makeEnum<Animal>({
-  //          v here's the difference
-  makeProto: (Animal) => ({
-    makeChild() {
-      // inside here, `Animal` now refers to the parameter of `makeProto` instead of the global `Animal` const
-      switch (this.case) {
-        case 'dog': return Animal.dog()
-        case 'cat': return Animal.cat()
-        case 'duck': return Animal.duck()
-      }
-    },
-  }),
-})
-```
-
-This is a little unfortunate, but is a very small price to pay to make everything work.
-
-Finally, there is **_convention #5_**: you should omit the parameters and return types of the prototype methods from its implementation. TypeScript will infer these for you, and you'll be immediately warned if something is wrong should you change your enum definition!
+Please note that in the future TypeScript may allow `this` to be specified in getters and setters, rendering this trick useless.
 
 ## Adding static methods
 
 [☝️ Back to TOC](#table-of-contents)
 
-When you need to add static methods or properties to your enum, you also need to perform two steps, similar to how you add a prototype. First step: declare an interface with name `<MyEnumName>Type` (**_convention #6_**) containing all the desired methods / properties; step two: pass this interface as the second generic parameter to `makeEnum` and implement it using the first parameter of the function:
+When you need to add static methods or properties to your enum, you also need to perform two steps, similar to how you add a prototype. First step: declare an interface with name `<MyEnumName>Type` (**_convention #4_**) containing all the desired methods / properties; step two: pass this interface as the second generic parameter to `makeEnum` and implement it using the first parameter of the function:
 
 ```typescript
 type Color =
@@ -353,23 +330,20 @@ type Color =
   | Case<'green'>
   | Case<'blue'>
 
-interface ColorType {
-  random(): Color
+class ColorType {
+  random(): Color {
+    if (random() > 0.3) {
+      return Color.red() // we prefer red!
+    }
+
+    return random() < 0.5 ? Color.green() : Color.blue()
+  }
 }
 
-const Color = makeEnum<Color, ColorType>({
-  makeType: (Color) => ({
-    random() {
-      if (Math.random() > 0.3) {
-        return Color.red() // we prefer red!
-      }
+const Color = makeEnum<Color, ColorType>({ type: ColorType })
 
-      return Math.random() < 0.5
-        ? Color.green()
-        : Color.blue()
-    },
-  }),
-})
+Color.random()
+// one of Color.red(), Color.green(), Color.blue()
 ```
 
 Defining the type works in the same way as [defining the prototype](#adding-a-prototype): use a function to declare it and receive a copy of the enum you are building as a parameter of the `makeType` function. As per **_convention #4_** call this symbol with the same name of the enum.
@@ -418,8 +392,15 @@ interface MyEnumHKT extends HKT3 {
 Now, let's finish by implementing the prototype and a static member for our generic enum - as you will see, the process remains identical to the non-generic case:
 
 ```typescript
-interface MaybeProto<T> {
-  map<U>(transform: (value: T) => U): Maybe<U>
+class MaybeProto<T> {
+  map<U>(this: Maybe<T>, transform: (value: T) => U): Maybe<U> {
+    switch (this.case) {
+      case 'none':
+        return Maybe.none()
+      case 'some':
+        return Maybe.some(transform(this.p))
+    }
+  }
 }
 
 type Maybe<T> = MaybeProto<T> & (
@@ -431,26 +412,17 @@ interface MaybeHKT extends HKT {
   readonly type: Maybe<this['_A']>
 }
 
-interface MaybeType {
-  fromValue<T>(value: T): Maybe<NonNullable<T>>
+class MaybeType {
+  fromValue<T>(value: T): Maybe<NonNullable<T>> {
+    return value !== null && value !== undefined
+      ? Maybe.some(value)
+      : Maybe.none()
+  }
 }
 
 const Maybe = makeEnum1<MaybeHKT, MaybeType>({
-  makeProto: (Maybe) => ({
-    map(transform) {
-      switch (this.case) {
-        case 'none': return Maybe.none()
-        case 'some': return Maybe.some(transform(this.p))
-      }
-    }
-  }),
-  makeType: (Maybe) => ({
-    fromValue(value) {
-      return value !== null && value !== undefined
-        ? Maybe.some(value)
-        : Maybe.none()
-    },
-  }),
+  proto: MaybeProto,
+  type: MaybeType,
 })
 ```
 
@@ -885,11 +857,7 @@ Here's a list of the conventions this library states for your convenience!
 
 **_Convention #3_**: When defining a prototype for your enum, name it `<EnumName>Proto`.
 
-**_Convention #4_**: When using the enum copy inside the `makeProto` function (see [todo](#adding-a-prototype)), call the binding with the same name as the enum.
-
-**_Convention #5_**: In the `makeProto` function, omit all parameters and return types from the implementation of the prototype methods.
-
-**_Convention #6_**: When defining a type to hold static methods for your enum, name it `<EnumName>Type`.
+**_Convention #4_**: When defining a type to hold static methods for your enum, name it `<EnumName>Type`.
 
 ## Known issues
 
@@ -897,7 +865,9 @@ Here's a list of the conventions this library states for your convenience!
 
 At the moment there is one minor issue with the library.
 
-It appears that currently TypeScript (version `4.*`, I did not check `5.*`) is not very good at resolving `this` inside getters and setters when using `ThisType`, so when defining accessors in your enum prototype you might face some issues. For now, until TypeScript fixes this or I find an alternative approach, it might be better to only use methods inside `makeProto` and `makeType`.
+Currently TypeScript does not allow developers to specify the type of  `this` inside getters and setters, so when defining accessors in your enum prototype you might face some issues. For now, until TypeScript adds this feature, the suggestion is to only use methods inside the enum prototype.
+
+However, if you need or prefer to use getters or setters, you can use a little helper this library provides to force the type of `this`. See the section on [getters and setters](#prototype-getters-and-setters) for more information about this.
 
 ## But why do I need enums?
 
@@ -1041,8 +1011,15 @@ class Product {
 
 // -- better way
 
-interface StatusProto {
-  get isInStock(): boolean
+class StatusProto {
+  get isInStock(): boolean {
+    switch (thisHelper<Status>(this).case) {
+      case 'inStock':
+        return true
+      case 'outOfStock':
+        return false
+    }
+  }
 }
 
 type Status = StatusProto & (
