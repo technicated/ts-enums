@@ -32,17 +32,21 @@ export type EnumCtors<Enum extends EnumShape> = {
 } & Record<typeof cases, CasesOfEnum<Enum>> &
   UnionToIntersection<CasePathFns<Enum>>
 
-type MakeProtoFn<Enum extends EnumShape, EnumType extends object> = (
+/*type MakeProtoFn<Enum extends EnumShape, EnumType extends object> = (
   Enum: [EnumType] extends [never]
     ? EnumCtors<Enum>
     : EnumCtors<Enum> & EnumType
-) => ThisType<Enum> & Omit<Enum, 'case' | 'p'>
+) => ThisType<Enum> & Omit<Enum, 'case' | 'p'>*/
 
 type MakeTypeFn<Enum extends EnumShape, EnumType extends object> = (
   Enum: [EnumType] extends [never]
     ? EnumCtors<Enum>
     : EnumCtors<Enum> & EnumType
 ) => EnumType
+
+interface Proto {
+  new (): object
+}
 
 export type MakeEnumFnArgs<
   Enum extends EnumShape,
@@ -51,14 +55,14 @@ export type MakeEnumFnArgs<
   ? Enum & { _: unknown } extends infer _T
     ? keyof Omit<_T, 'case' | 'p'> extends '_'
       ? []
-      : [{ makeProto: MakeProtoFn<Enum, EnumType> }]
+      : [{ proto: Proto }]
     : never
   : Enum & { _: unknown } extends infer _T
   ? keyof Omit<_T, 'case' | 'p'> extends '_'
     ? [{ makeType: MakeTypeFn<Enum, EnumType> }]
     : [
         {
-          makeProto: MakeProtoFn<Enum, EnumType>
+          proto: Proto
           makeType: MakeTypeFn<Enum, EnumType>
         }
       ]

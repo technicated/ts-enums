@@ -1,5 +1,6 @@
 import test, { ExecutionContext } from 'ava'
 import { Case, cases } from '../case'
+import { thisHelper } from '../this-helper'
 import { unit, Unit } from '../unit'
 import { makeEnum } from './make-enum'
 import { CasesOf, EnumCtors, EnumShape } from './types'
@@ -106,31 +107,28 @@ test('basic property owning', (t) => {
 })
 
 test('enum with proto', (t) => {
-  interface MyEnumProto {
-    self: this
+  class MyEnumProto {
+    get self(): MyEnum {
+      return thisHelper(this)
+    }
 
-    getNumber(): number
+    getNumber(this: MyEnum): number {
+      switch (this.case) {
+        case 'a':
+          return -1
+        case 'b':
+          return this.p.value
+        case 'c':
+          return this.p[1] * this.p[1]
+      }
+    }
   }
 
   type MyEnum = MyEnumProto &
     (Case<'a'> | Case<'b', { value: number }> | Case<'c', [string, number]>)
 
   const MyEnum = makeEnum<MyEnum>({
-    makeProto: () => ({
-      get self(): MyEnum {
-        return this
-      },
-      getNumber() {
-        switch (this.case) {
-          case 'a':
-            return -1
-          case 'b':
-            return this.p.value
-          case 'c':
-            return this.p[1] * this.p[1]
-        }
-      },
-    }),
+    proto: MyEnumProto,
   })
 
   const performCheck = makePerformEqualityCheck(t, MyEnum, (v, number) => {
@@ -149,31 +147,28 @@ test('enum with proto', (t) => {
 })
 
 test('property owning with proto', (t) => {
-  interface MyEnumProto {
-    self: this
+  class MyEnumProto {
+    get self(): MyEnum {
+      return thisHelper(this)
+    }
 
-    getNumber(): number
+    getNumber(this: MyEnum): number {
+      switch (this.case) {
+        case 'a':
+          return -1
+        case 'b':
+          return this.p.value
+        case 'c':
+          return this.p[1] * this.p[1]
+      }
+    }
   }
 
   type MyEnum = MyEnumProto &
     (Case<'a'> | Case<'b', { value: number }> | Case<'c', [string, number]>)
 
   const MyEnum = makeEnum<MyEnum>({
-    makeProto: () => ({
-      get self(): MyEnum {
-        return this
-      },
-      getNumber() {
-        switch (this.case) {
-          case 'a':
-            return -1
-          case 'b':
-            return this.p.value
-          case 'c':
-            return this.p[1] * this.p[1]
-        }
-      },
-    }),
+    proto: MyEnumProto,
   })
 
   const performCheck = makePerformOwnershipCheck(t, (v) => {
@@ -192,10 +187,21 @@ test('property owning with proto', (t) => {
 })
 
 test('enum with proto and type', (t) => {
-  interface MyEnumProto {
-    self: this
+  class MyEnumProto {
+    get self(): MyEnum {
+      return thisHelper(this)
+    }
 
-    getNumber(): number
+    getNumber(this: MyEnum): number {
+      switch (this.case) {
+        case 'a':
+          return -1
+        case 'b':
+          return this.p.value
+        case 'c':
+          return this.p[1] * this.p[1]
+      }
+    }
   }
 
   interface MyEnumType {
@@ -206,21 +212,7 @@ test('enum with proto and type', (t) => {
     (Case<'a'> | Case<'b', { value: number }> | Case<'c', [string, number]>)
 
   const MyEnum = makeEnum<MyEnum, MyEnumType>({
-    makeProto: () => ({
-      get self(): MyEnum {
-        return this
-      },
-      getNumber() {
-        switch (this.case) {
-          case 'a':
-            return -1
-          case 'b':
-            return this.p.value
-          case 'c':
-            return this.p[1] * this.p[1]
-        }
-      },
-    }),
+    proto: MyEnumProto,
     makeType: (MyEnum) => ({
       make(...args) {
         switch (args.length) {
@@ -260,10 +252,21 @@ test('enum with proto and type', (t) => {
 })
 
 test('property owning with proto and type', (t) => {
-  interface MyEnumProto {
-    self: this
+  class MyEnumProto {
+    get self(): MyEnum {
+      return thisHelper(this)
+    }
 
-    getNumber(): number
+    getNumber(this: MyEnum): number {
+      switch (this.case) {
+        case 'a':
+          return -1
+        case 'b':
+          return this.p.value
+        case 'c':
+          return this.p[1] * this.p[1]
+      }
+    }
   }
 
   interface MyEnumType {
@@ -274,21 +277,7 @@ test('property owning with proto and type', (t) => {
     (Case<'a'> | Case<'b', { value: number }> | Case<'c', [string, number]>)
 
   const MyEnum = makeEnum<MyEnum, MyEnumType>({
-    makeProto: () => ({
-      get self(): MyEnum {
-        return this
-      },
-      getNumber() {
-        switch (this.case) {
-          case 'a':
-            return -1
-          case 'b':
-            return this.p.value
-          case 'c':
-            return this.p[1] * this.p[1]
-        }
-      },
-    }),
+    proto: MyEnumProto,
     makeType: (MyEnum) => ({
       make(...args) {
         switch (args.length) {

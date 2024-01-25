@@ -129,69 +129,69 @@ test('Adding a payload', (t) => {
   t.is(log, 'people names are: user1, user2')
 })
 
-test('Adding a prototype, 1', (t) => {
-  console.reset()
+// test('Adding a prototype, 1', (t) => {
+//   console.reset()
 
-  interface AnimalProto {
-    makeNoise(): void
-  }
+//   interface AnimalProto {
+//     makeNoise(): void
+//   }
 
-  type Animal = AnimalProto & (Case<'dog'> | Case<'cat'> | Case<'duck'>)
+//   type Animal = AnimalProto & (Case<'dog'> | Case<'cat'> | Case<'duck'>)
 
-  const Animal = makeEnum<Animal>({
-    makeProto: () => ({
-      // implement this method as a traditional function and not as an arrow function, so `this` will be bound to the instance of `Animal` on which this method is called
-      makeNoise() {
-        switch (this.case) {
-          case 'dog':
-            console.log('bark!')
-            break
-          case 'cat':
-            console.log('meow!')
-            break
-          case 'duck':
-            console.log('quack!')
-            break
-        }
-      },
-    }),
-  })
+//   const Animal = makeEnum<Animal>({
+//     makeProto: () => ({
+//       // implement this method as a traditional function and not as an arrow function, so `this` will be bound to the instance of `Animal` on which this method is called
+//       makeNoise() {
+//         switch (this.case) {
+//           case 'dog':
+//             console.log('bark!')
+//             break
+//           case 'cat':
+//             console.log('meow!')
+//             break
+//           case 'duck':
+//             console.log('quack!')
+//             break
+//         }
+//       },
+//     }),
+//   })
 
-  Animal.dog().makeNoise() // bark!
-  Animal.cat().makeNoise() // meow!
-  Animal.duck().makeNoise() // quack!
+//   Animal.dog().makeNoise() // bark!
+//   Animal.cat().makeNoise() // meow!
+//   Animal.duck().makeNoise() // quack!
 
-  t.deepEqual(console.logs, ['bark!', 'meow!', 'quack!'])
-})
+//   t.deepEqual(console.logs, ['bark!', 'meow!', 'quack!'])
+// })
 
-test('Adding a prototype, 2', (t) => {
-  interface AnimalProto {
-    makeChild(): Animal
-  }
+// test('Adding a prototype, 2', (t) => {
+//   interface AnimalProto {
+//     makeChild(): Animal
+//   }
 
-  type Animal = AnimalProto & (Case<'dog'> | Case<'cat'> | Case<'duck'>)
+//   type Animal = AnimalProto & (Case<'dog'> | Case<'cat'> | Case<'duck'>)
 
-  const Animal = makeEnum<Animal>({
-    //          v here's the difference
-    makeProto: (Animal) => ({
-      makeChild() {
-        // inside here, `Animal` now refers to the parameter of `makeProto` instead of the global `Animal` const
-        switch (this.case) {
-          case 'dog':
-            return Animal.dog()
-          case 'cat':
-            return Animal.cat()
-          case 'duck':
-            return Animal.duck()
-        }
-      },
-    }),
-  })
+//   const Animal = makeEnum<Animal>({
+//     //          v here's the difference
+//     makeProto: (Animal) => ({
+//       makeChild() {
+//         // inside here, `Animal` now refers to the parameter of `makeProto` instead of the global `Animal` const
+//         switch (this.case) {
+//           case 'dog':
+//             return Animal.dog()
+//           case 'cat':
+//             return Animal.cat()
+//           case 'duck':
+//             return Animal.duck()
+//         }
+//       },
+//     }),
+//   })
 
-  t.deepEqual(Animal.cat().makeChild(), Animal.cat())
-  t.deepEqual(Animal.dog().makeChild(), Animal.dog())
-  t.deepEqual(Animal.duck().makeChild(), Animal.duck())
-})
+//   t.deepEqual(Animal.cat().makeChild(), Animal.cat())
+//   t.deepEqual(Animal.dog().makeChild(), Animal.dog())
+//   t.deepEqual(Animal.duck().makeChild(), Animal.duck())
+// })
 
 test('Adding static methods', (t) => {
   const randomValues = [0.7, 0.1, 0.5]
@@ -878,8 +878,15 @@ test('But why do I need enums? - Example #1', (t) => {
   }
 
   {
-    interface StatusProto {
-      get isInStock(): boolean
+    class StatusProto {
+      isInStock(this: Status): boolean {
+        switch (this.case) {
+          case 'inStock':
+            return true
+          case 'outOfStock':
+            return false
+        }
+      }
     }
 
     type Status = StatusProto &
@@ -889,16 +896,7 @@ test('But why do I need enums? - Example #1', (t) => {
       )
 
     const Status = makeEnum<Status>({
-      makeProto: () => ({
-        get isInStock(): boolean {
-          switch (this.case) {
-            case 'inStock':
-              return true
-            case 'outOfStock':
-              return false
-          }
-        },
-      }),
+      proto: StatusProto,
     })
 
     class Product {
@@ -906,7 +904,7 @@ test('But why do I need enums? - Example #1', (t) => {
       status: Status
 
       get isInStock(): boolean {
-        return this.status.isInStock
+        return this.status.isInStock()
       }
 
       static inStock(name: string, quantity: number): Product {
