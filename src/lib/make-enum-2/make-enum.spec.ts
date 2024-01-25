@@ -62,8 +62,17 @@ test('basic enum', (t) => {
 })
 
 test('enum with proto', (t) => {
-  interface MyEnumProto<A, B> {
-    prev(): MyEnum<A, B>
+  class MyEnumProto<A, B> {
+    prev(this: MyEnum<A, B>): MyEnum<A, B> {
+      switch (this.case) {
+        case 'empty':
+          return MyEnum.empty()
+        case 'a':
+          return MyEnum.empty()
+        case 'b':
+          return MyEnum.a([this.p[0]])
+      }
+    }
   }
 
   type MyEnum<A, B> = MyEnumProto<A, B> &
@@ -73,20 +82,7 @@ test('enum with proto', (t) => {
     readonly type: MyEnum<this['_A'], this['_B']>
   }
 
-  const MyEnum = makeEnum2<MyEnumHKT>({
-    makeProto: (MyEnum) => ({
-      prev() {
-        switch (this.case) {
-          case 'empty':
-            return MyEnum.empty()
-          case 'a':
-            return MyEnum.empty()
-          case 'b':
-            return MyEnum.a([this.p[0]])
-        }
-      },
-    }),
-  })
+  const MyEnum = makeEnum2<MyEnumHKT>({ proto: MyEnumProto })
 
   const performCheck = makePerformEqualityCheck(t, MyEnum, (v, prev) => {
     t.deepEqual(v.prev(), prev)
@@ -103,8 +99,17 @@ test('enum with proto', (t) => {
 })
 
 test('enum with proto and type', (t) => {
-  interface MyEnumProto<A, B> {
-    prev(): MyEnum<A, B>
+  class MyEnumProto<A, B> {
+    prev(this: MyEnum<A, B>): MyEnum<A, B> {
+      switch (this.case) {
+        case 'empty':
+          return MyEnum.empty()
+        case 'a':
+          return MyEnum.empty()
+        case 'b':
+          return MyEnum.a([this.p[0]])
+      }
+    }
   }
 
   type MyEnum<A, B> = MyEnumProto<A, B> &
@@ -114,35 +119,22 @@ test('enum with proto and type', (t) => {
     readonly type: MyEnum<this['_A'], this['_B']>
   }
 
-  interface MyEnumType {
-    make<A, B>(...args: [] | [A] | [A, B]): MyEnum<A, B>
+  class MyEnumType {
+    make<A, B>(...args: [] | [A] | [A, B]): MyEnum<A, B> {
+      switch (args.length) {
+        case 0:
+          return MyEnum.empty()
+        case 1:
+          return MyEnum.a(args)
+        case 2:
+          return MyEnum.b(args)
+      }
+    }
   }
 
   const MyEnum = makeEnum2<MyEnumHKT, MyEnumType>({
-    makeProto: (MyEnum) => ({
-      prev() {
-        switch (this.case) {
-          case 'empty':
-            return MyEnum.empty()
-          case 'a':
-            return MyEnum.empty()
-          case 'b':
-            return MyEnum.a([this.p[0]])
-        }
-      },
-    }),
-    makeType: (MyEnum) => ({
-      make(...args) {
-        switch (args.length) {
-          case 0:
-            return MyEnum.empty()
-          case 1:
-            return MyEnum.a(args)
-          case 2:
-            return MyEnum.b(args)
-        }
-      },
-    }),
+    proto: MyEnumProto,
+    type: MyEnumType,
   })
 
   const performCheck = makePerformEqualityCheck(t, MyEnum, (v, prev) => {
@@ -175,24 +167,20 @@ test('enum with type', (t) => {
     readonly type: MyEnum<this['_A'], this['_B']>
   }
 
-  interface MyEnumType {
-    make<A, B>(...args: [] | [A] | [A, B]): MyEnum<A, B>
+  class MyEnumType {
+    make<A, B>(...args: [] | [A] | [A, B]): MyEnum<A, B> {
+      switch (args.length) {
+        case 0:
+          return MyEnum.empty()
+        case 1:
+          return MyEnum.a(args)
+        case 2:
+          return MyEnum.b(args)
+      }
+    }
   }
 
-  const MyEnum = makeEnum2<MyEnumHKT, MyEnumType>({
-    makeType: (MyEnum) => ({
-      make(...args) {
-        switch (args.length) {
-          case 0:
-            return MyEnum.empty()
-          case 1:
-            return MyEnum.a(args)
-          case 2:
-            return MyEnum.b(args)
-        }
-      },
-    }),
-  })
+  const MyEnum = makeEnum2<MyEnumHKT, MyEnumType>({ type: MyEnumType })
 
   const performCheck = makePerformEqualityCheck(t, MyEnum)
 
@@ -252,8 +240,21 @@ test('nested enums', (t) => {
 })
 
 test('weird generics', (t) => {
-  interface MaybeProto<A, B> {
-    map<Y, Z>(tx_a: (value: A) => Y, tx_b: (value: B) => Z): Maybe<Y, Z>
+  class MaybeProto<A, B> {
+    map<Y, Z>(
+      this: Maybe<A, B>,
+      tx_a: (value: A) => Y,
+      tx_b: (value: B) => Z
+    ): Maybe<Y, Z> {
+      switch (this.case) {
+        case 'none':
+          return Maybe.none()
+        case 'someA':
+          return Maybe.someA(tx_a(this.p))
+        case 'someB':
+          return Maybe.someB(tx_b(this.p))
+      }
+    }
   }
 
   type Maybe<A, B> = MaybeProto<A, B> &
@@ -263,32 +264,31 @@ test('weird generics', (t) => {
     readonly type: Maybe<this['_A'], this['_B']>
   }
 
-  interface MaybeType {
+  class MaybeType {
     fromValues<A, B>(
       values?: { a: A } | { b: B }
-    ): Maybe<NonNullable<A>, NonNullable<B>>
+    ): Maybe<NonNullable<A>, NonNullable<B>> {
+      if (
+        values &&
+        'a' in values &&
+        values.a !== null &&
+        values.a !== undefined
+      )
+        return Maybe.someA(values.a)
+      if (
+        values &&
+        'b' in values &&
+        values.b !== null &&
+        values.b !== undefined
+      )
+        return Maybe.someB(values.b)
+      return Maybe.none()
+    }
   }
 
   const Maybe = makeEnum2<MaybeHKT, MaybeType>({
-    makeProto: (Maybe) => ({
-      map(tx_a, tx_b) {
-        switch (this.case) {
-          case 'none':
-            return Maybe.none()
-          case 'someA':
-            return Maybe.someA(tx_a(this.p))
-          case 'someB':
-            return Maybe.someB(tx_b(this.p))
-        }
-      },
-    }),
-    makeType: (Maybe) => ({
-      fromValues(values) {
-        if (values && 'a' in values && values.a) return Maybe.someA(values.a)
-        if (values && 'b' in values && values.b) return Maybe.someB(values.b)
-        return Maybe.none()
-      },
-    }),
+    proto: MaybeProto,
+    type: MaybeType,
   })
 
   t.like(Maybe.fromValues(), { case: 'none', p: unit })

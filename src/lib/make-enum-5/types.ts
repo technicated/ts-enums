@@ -46,24 +46,13 @@ export type EnumCtors<EnumHKT extends EnumShape> = {
 } & Record<typeof cases, CasesOfEnum<EnumHKT>> &
   UnionToIntersection<CasePathFns<EnumHKT>>
 
-type MakeProtoFn<EnumHKT extends EnumShape, EnumType extends object> = <
-  A,
-  B,
-  C,
-  D,
-  E
->(
-  Enum: [EnumType] extends [never]
-    ? EnumCtors<EnumHKT>
-    : EnumCtors<EnumHKT> & EnumType
-) => ThisType<Kind5<EnumHKT, A, B, C, D, E>> &
-  Omit<Kind5<EnumHKT, A, B, C, D, E>, 'case' | 'p'>
+interface Proto<EnumHKT extends EnumShape> {
+  new <A, B, C, D, E>(): Omit<Kind5<EnumHKT, A, B, C, D, E>, 'case' | 'p'>
+}
 
-type MakeTypeFn<EnumHKT extends EnumShape, EnumType extends object> = (
-  Enum: [EnumType] extends [never]
-    ? EnumCtors<EnumHKT>
-    : EnumCtors<EnumHKT> & EnumType
-) => EnumType
+interface Type<EnumType extends object> {
+  new (): EnumType
+}
 
 export type MakeEnumFnArgs<
   EnumHKT extends EnumShape,
@@ -72,15 +61,15 @@ export type MakeEnumFnArgs<
   ? EnumHKT['type'] & { _: unknown } extends infer _T
     ? keyof Omit<_T, 'case' | 'p'> extends '_'
       ? []
-      : [{ makeProto: MakeProtoFn<EnumHKT, EnumType> }]
+      : [{ proto: Proto<EnumHKT> }]
     : never
   : EnumHKT['type'] & { _: unknown } extends infer _T
   ? keyof Omit<_T, 'case' | 'p'> extends '_'
-    ? [{ makeType: MakeTypeFn<EnumHKT, EnumType> }]
+    ? [{ type: Type<EnumType> }]
     : [
         {
-          makeProto: MakeProtoFn<EnumHKT, EnumType>
-          makeType: MakeTypeFn<EnumHKT, EnumType>
+          proto: Proto<EnumHKT>
+          type: Type<EnumType>
         }
       ]
   : never

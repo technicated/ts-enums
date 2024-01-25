@@ -42,21 +42,9 @@ export type EnumCtors<EnumHKT extends EnumShape> = {
 } & Record<typeof cases, CasesOfEnum<EnumHKT>> &
   UnionToIntersection<CasePathFns<EnumHKT>>
 
-// type MakeProtoFn<EnumHKT extends EnumShape, EnumType extends object> = <A>(
-//   Enum: [EnumType] extends [never]
-//     ? EnumCtors<EnumHKT>
-//     : EnumCtors<EnumHKT> & EnumType
-// ) => ThisType<Kind<EnumHKT, A>> & Omit<Kind<EnumHKT, A>, 'case' | 'p'>
-
 interface Proto<EnumHKT extends EnumShape> {
   new <A>(): Omit<Kind<EnumHKT, A>, 'case' | 'p'>
 }
-
-// type MakeTypeFn<EnumHKT extends EnumShape, EnumType extends object> = (
-//   Enum: [EnumType] extends [never]
-//     ? EnumCtors<EnumHKT>
-//     : EnumCtors<EnumHKT> & EnumType
-// ) => EnumType
 
 interface Type<EnumType extends object> {
   new (): EnumType
