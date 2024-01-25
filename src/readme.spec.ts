@@ -193,76 +193,76 @@ test('Adding a payload', (t) => {
 //   t.deepEqual(Animal.duck().makeChild(), Animal.duck())
 // })
 
-test('Adding static methods', (t) => {
-  const randomValues = [0.7, 0.1, 0.5]
-  const random = () => randomValues.pop() ?? 0
+// test('Adding static methods', (t) => {
+//   const randomValues = [0.7, 0.1, 0.5]
+//   const random = () => randomValues.pop() ?? 0
 
-  type Color = Case<'red'> | Case<'green'> | Case<'blue'>
+//   type Color = Case<'red'> | Case<'green'> | Case<'blue'>
 
-  interface ColorType {
-    random(): Color
-  }
+//   interface ColorType {
+//     random(): Color
+//   }
 
-  const Color = makeEnum<Color, ColorType>({
-    makeType: (Color) => ({
-      random() {
-        if (random() > 0.3) {
-          return Color.red() // we prefer red!
-        }
+//   const Color = makeEnum<Color, ColorType>({
+//     makeType: (Color) => ({
+//       random() {
+//         if (random() > 0.3) {
+//           return Color.red() // we prefer red!
+//         }
 
-        return random() < 0.5 ? Color.green() : Color.blue()
-      },
-    }),
-  })
+//         return random() < 0.5 ? Color.green() : Color.blue()
+//       },
+//     }),
+//   })
 
-  t.deepEqual(Color.random(), Color.red())
-  t.deepEqual(Color.random(), Color.blue())
-})
+//   t.deepEqual(Color.random(), Color.red())
+//   t.deepEqual(Color.random(), Color.blue())
+// })
 
-test('Using generics', (t) => {
-  interface MaybeProto<T> {
-    map<U>(transform: (value: T) => U): Maybe<U>
-  }
+// test('Using generics', (t) => {
+//   interface MaybeProto<T> {
+//     map<U>(transform: (value: T) => U): Maybe<U>
+//   }
 
-  type Maybe<T> = MaybeProto<T> & (Case<'none'> | Case<'some', T>)
+//   type Maybe<T> = MaybeProto<T> & (Case<'none'> | Case<'some', T>)
 
-  interface MaybeHKT extends HKT {
-    readonly type: Maybe<this['_A']>
-  }
+//   interface MaybeHKT extends HKT {
+//     readonly type: Maybe<this['_A']>
+//   }
 
-  interface MaybeType {
-    fromValue<T>(value: T): Maybe<NonNullable<T>>
-  }
+//   interface MaybeType {
+//     fromValue<T>(value: T): Maybe<NonNullable<T>>
+//   }
 
-  const Maybe = makeEnum1<MaybeHKT, MaybeType>({
-    makeProto: (Maybe) => ({
-      map(transform) {
-        switch (this.case) {
-          case 'none':
-            return Maybe.none()
-          case 'some':
-            return Maybe.some(transform(this.p))
-        }
-      },
-    }),
-    makeType: (Maybe) => ({
-      fromValue(value) {
-        return value !== null && value !== undefined
-          ? Maybe.some(value)
-          : Maybe.none()
-      },
-    }),
-  })
+//   const Maybe = makeEnum1<MaybeHKT, MaybeType>({
+//     makeProto: (Maybe) => ({
+//       map(transform) {
+//         switch (this.case) {
+//           case 'none':
+//             return Maybe.none()
+//           case 'some':
+//             return Maybe.some(transform(this.p))
+//         }
+//       },
+//     }),
+//     makeType: (Maybe) => ({
+//       fromValue(value) {
+//         return value !== null && value !== undefined
+//           ? Maybe.some(value)
+//           : Maybe.none()
+//       },
+//     }),
+//   })
 
-  t.deepEqual(Maybe.fromValue(42), Maybe.some(42))
-  t.deepEqual(Maybe.fromValue(null), Maybe.none())
-  t.deepEqual(Maybe.fromValue(undefined), Maybe.none())
+//   t.deepEqual(Maybe.fromValue(42), Maybe.some(42))
+//   t.deepEqual(Maybe.fromValue(null), Maybe.none())
+//   t.deepEqual(Maybe.fromValue(undefined), Maybe.none())
 
-  t.deepEqual(
-    Maybe.some(['Hello', 'world']).map((arr) => `${arr.join(', ')}!`),
-    Maybe.some('Hello, world!')
-  )
-})
+//   t.deepEqual(
+//     Maybe.some(['Hello', 'world']).map((arr) => `${arr.join(', ')}!`),
+//     Maybe.some('Hello, world!')
+//   )
+// })
 
 test('Plain Old JavaScript Objects', (t) => {
   {

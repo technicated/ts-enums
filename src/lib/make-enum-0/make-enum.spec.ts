@@ -204,8 +204,17 @@ test('enum with proto and type', (t) => {
     }
   }
 
-  interface MyEnumType {
-    make(...args: [] | [n: number] | [n: number, s: string]): MyEnum
+  class MyEnumType {
+    make(...args: [] | [n: number] | [n: number, s: string]): MyEnum {
+      switch (args.length) {
+        case 0:
+          return MyEnum.a()
+        case 1:
+          return MyEnum.b({ value: args[0] })
+        case 2:
+          return MyEnum.c([args[1], args[0]])
+      }
+    }
   }
 
   type MyEnum = MyEnumProto &
@@ -213,18 +222,7 @@ test('enum with proto and type', (t) => {
 
   const MyEnum = makeEnum<MyEnum, MyEnumType>({
     proto: MyEnumProto,
-    makeType: (MyEnum) => ({
-      make(...args) {
-        switch (args.length) {
-          case 0:
-            return MyEnum.a()
-          case 1:
-            return MyEnum.b({ value: args[0] })
-          case 2:
-            return MyEnum.c([args[1], args[0]])
-        }
-      },
-    }),
+    type: MyEnumType,
   })
 
   const performCheck = makePerformEqualityCheck(t, MyEnum, (v, number) => {
@@ -269,8 +267,17 @@ test('property owning with proto and type', (t) => {
     }
   }
 
-  interface MyEnumType {
-    make(...args: [] | [n: number] | [n: number, s: string]): MyEnum
+  class MyEnumType {
+    make(...args: [] | [n: number] | [n: number, s: string]): MyEnum {
+      switch (args.length) {
+        case 0:
+          return MyEnum.a()
+        case 1:
+          return MyEnum.b({ value: args[0] })
+        case 2:
+          return MyEnum.c([args[1], args[0]])
+      }
+    }
   }
 
   type MyEnum = MyEnumProto &
@@ -278,18 +285,7 @@ test('property owning with proto and type', (t) => {
 
   const MyEnum = makeEnum<MyEnum, MyEnumType>({
     proto: MyEnumProto,
-    makeType: (MyEnum) => ({
-      make(...args) {
-        switch (args.length) {
-          case 0:
-            return MyEnum.a()
-          case 1:
-            return MyEnum.b({ value: args[0] })
-          case 2:
-            return MyEnum.c([args[1], args[0]])
-        }
-      },
-    }),
+    type: MyEnumType,
   })
 
   const performCheck = makePerformOwnershipCheck(t, (v) => {
@@ -310,8 +306,17 @@ test('property owning with proto and type', (t) => {
 })
 
 test('enum with type', (t) => {
-  interface MyEnumType {
-    make(...args: [] | [n: number] | [n: number, s: string]): MyEnum
+  class MyEnumType {
+    make(...args: [] | [n: number] | [n: number, s: string]): MyEnum {
+      switch (args.length) {
+        case 0:
+          return MyEnum.a()
+        case 1:
+          return MyEnum.b({ value: args[0] })
+        case 2:
+          return MyEnum.c([args[1], args[0]])
+      }
+    }
   }
 
   type MyEnum =
@@ -319,20 +324,7 @@ test('enum with type', (t) => {
     | Case<'b', { value: number }>
     | Case<'c', [string, number]>
 
-  const MyEnum = makeEnum<MyEnum, MyEnumType>({
-    makeType: (MyEnum) => ({
-      make(...args) {
-        switch (args.length) {
-          case 0:
-            return MyEnum.a()
-          case 1:
-            return MyEnum.b({ value: args[0] })
-          case 2:
-            return MyEnum.c([args[1], args[0]])
-        }
-      },
-    }),
-  })
+  const MyEnum = makeEnum<MyEnum, MyEnumType>({ type: MyEnumType })
 
   const performCheck = makePerformEqualityCheck(t, MyEnum)
 
@@ -356,8 +348,17 @@ test('enum with type', (t) => {
 })
 
 test('property owning with type', (t) => {
-  interface MyEnumType {
-    make(...args: [] | [n: number] | [n: number, s: string]): MyEnum
+  class MyEnumType {
+    make(...args: [] | [n: number] | [n: number, s: string]): MyEnum {
+      switch (args.length) {
+        case 0:
+          return MyEnum.a()
+        case 1:
+          return MyEnum.b({ value: args[0] })
+        case 2:
+          return MyEnum.c([args[1], args[0]])
+      }
+    }
   }
 
   type MyEnum =
@@ -365,20 +366,7 @@ test('property owning with type', (t) => {
     | Case<'b', { value: number }>
     | Case<'c', [string, number]>
 
-  const MyEnum = makeEnum<MyEnum, MyEnumType>({
-    makeType: (MyEnum) => ({
-      make(...args) {
-        switch (args.length) {
-          case 0:
-            return MyEnum.a()
-          case 1:
-            return MyEnum.b({ value: args[0] })
-          case 2:
-            return MyEnum.c([args[1], args[0]])
-        }
-      },
-    }),
-  })
+  const MyEnum = makeEnum<MyEnum, MyEnumType>({ type: MyEnumType })
 
   const performCheck = makePerformOwnershipCheck(t)
 

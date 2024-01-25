@@ -56,12 +56,14 @@ type MakeCasePathFn = {
 
 export const makeEnum = ({
   makeProto,
-  proto,
   makeType,
+  proto,
+  type,
 }: {
   makeProto?: (enumProxy: object) => object
-  proto?: { new (): object }
   makeType?: (enumProxy: object) => Record<string | symbol, unknown>
+  proto?: { new (): object }
+  type?: { new (): Record<string | symbol, unknown> }
 } = {}) => {
   const protoWrapper: { proto: object } = { proto: {} }
   const typeWrapper: { type: Record<string | symbol, unknown> } = { type: {} }
@@ -117,7 +119,9 @@ export const makeEnum = ({
     protoWrapper.proto = makeProto(result)
   }
 
-  if (makeType) {
+  if (type) {
+    typeWrapper.type = new type()
+  } else if (makeType) {
     typeWrapper.type = makeType(result)
   }
 
